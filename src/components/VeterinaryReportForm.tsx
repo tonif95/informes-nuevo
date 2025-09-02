@@ -108,41 +108,51 @@ const VeterinaryReportForm: React.FC<VeterinaryReportFormProps> = () => {
     try {
       const selectedVet = veterinariansList.find(vet => vet.id === selectedVeterinarian);
       
-      // Crear FormData para enviar como parámetros individuales
-      const formData = new FormData();
-      formData.append('createdAt', new Date().toISOString());
-      formData.append('loggedIn', 'true');
-      formData.append('user', 'Testing');
-      formData.append('clientName', petData.name);
-      formData.append('tutorName', petData.tutorName);
-      formData.append('selectedReport', reportTypes.find(report => report.value === selectedReport)?.label || selectedReport);
-      formData.append('species', petData.species);
-      formData.append('sex', petData.sex);
-      formData.append('sterilization', petData.status);
-      formData.append('referralClinic', petData.referenceClinic || "");
-      formData.append('hasMicrochip', petData.hasMicrochip.toString());
-      formData.append('microchipNumber', petData.hasMicrochip ? petData.microchip : "");
-      formData.append('infoAdicional', petData.additionalInfo || "");
-      formData.append('audioData', audioData || "");
-      formData.append('reportFileID', "");
-      formData.append('selectedVet', '[null]');
-      formData.append('selectedClinic', '');
-      formData.append('address', 'C/ lafuente, 32');
-      formData.append('vetList', '');
-      formData.append('0', '');
-      formData.append('name', 'Antonio');
-      formData.append('number', '001');
-      formData.append('1', '');
-      formData.append('name', 'Miguel');
-      formData.append('number', '002');
-      formData.append('clinicList', '');
-      formData.append('0', '');
-      formData.append('address', 'C/ lafuente, 32');
+      // Crear el objeto de datos como JSON pero enviarlo como texto plano
+      const webhookData = {
+        createdAt: new Date().toISOString(),
+        loggedIn: true,
+        user: "Testing",
+        clientName: petData.name,
+        tutorName: petData.tutorName,
+        selectedReport: reportTypes.find(report => report.value === selectedReport)?.label || selectedReport,
+        species: petData.species,
+        sex: petData.sex,
+        sterilization: petData.status,
+        referralClinic: petData.referenceClinic || "",
+        hasMicrochip: petData.hasMicrochip,
+        microchipNumber: petData.hasMicrochip ? petData.microchip : "",
+        infoAdicional: petData.additionalInfo || "",
+        audioData: audioData || "",
+        reportFileID: "",
+        selectedVet: null,
+        selectedClinic: {
+          address: "C/ lafuente, 32"
+        },
+        vetList: [
+          {
+            name: "Antonio",
+            number: "001"
+          },
+          {
+            name: "Miguel", 
+            number: "002"
+          }
+        ],
+        clinicList: [
+          {
+            address: "C/ lafuente, 32"
+          }
+        ]
+      };
 
       const response = await fetch(webhookUrl, {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
         mode: "no-cors",
-        body: formData,
+        body: JSON.stringify(webhookData),
       });
 
       toast({
