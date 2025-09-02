@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -33,6 +33,8 @@ const VeterinaryReportForm: React.FC<VeterinaryReportFormProps> = () => {
   const [webhookUrl, setWebhookUrl] = useState('');
   const [audioData, setAudioData] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
+  const [recordingTimer, setRecordingTimer] = useState<NodeJS.Timeout | null>(null);
   const [petData, setPetData] = useState({
     name: '',
     tutorName: '',
@@ -64,17 +66,84 @@ const VeterinaryReportForm: React.FC<VeterinaryReportFormProps> = () => {
   const sexList = ['Macho', 'Hembra'];
   const statusList = ['Entero', 'Castrado'];
 
-  const toggleRecording = () => {
-    setIsRecording(!isRecording);
+  // Efecto de limpieza para el temporizador
+  useEffect(() => {
+    return () => {
+      if (recordingTimer) {
+        clearInterval(recordingTimer);
+      }
+    };
+  }, [recordingTimer]);
+
+  const toggleRecording = async () => {
     if (!isRecording) {
-      // Start recording logic
-      const timer = setInterval(() => {
-        setRecordingTime(prev => prev + 1);
-      }, 1000);
-      return () => clearInterval(timer);
+      // Iniciar grabación
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            sampleRate: 44100
+          } 
+        });
+
+        const recorder = new MediaRecorder(stream, {
+          mimeType: 'audio/webm;codecs=opus'
+        });
+
+        const audioChunks: Blob[] = [];
+
+        recorder.ondataavailable = (event) => {
+          audioChunks.push(event.data);
+        };
+
+        recorder.onstop = () => {
+          const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+          const reader = new FileReader();
+          
+          reader.onloadend = () => {
+            const base64String = reader.result as string;
+            setAudioData(base64String);
+          };
+          
+          reader.readAsDataURL(audioBlob);
+          
+          // Detener todos los tracks del stream
+          stream.getTracks().forEach(track => track.stop());
+        };
+
+        recorder.start();
+        setMediaRecorder(recorder);
+        setIsRecording(true);
+        setRecordingTime(0);
+
+        // Iniciar el temporizador
+        const timer = setInterval(() => {
+          setRecordingTime(prev => prev + 1);
+        }, 1000);
+        setRecordingTimer(timer);
+
+      } catch (error) {
+        console.error('Error accessing microphone:', error);
+        toast({
+          title: "Error",
+          description: "No se pudo acceder al micrófono. Verifique los permisos.",
+          variant: "destructive",
+        });
+      }
     } else {
-      // Stop recording logic
-      setRecordingTime(0);
+      // Detener grabación
+      if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+        mediaRecorder.stop();
+      }
+      
+      if (recordingTimer) {
+        clearInterval(recordingTimer);
+        setRecordingTimer(null);
+      }
+      
+      setIsRecording(false);
+      setMediaRecorder(null);
     }
   };
 
@@ -108,51 +177,44 @@ const VeterinaryReportForm: React.FC<VeterinaryReportFormProps> = () => {
     try {
       const selectedVet = veterinariansList.find(vet => vet.id === selectedVeterinarian);
       
-      // Crear el objeto de datos como JSON pero enviarlo como texto plano
-      const webhookData = {
-        createdAt: new Date().toISOString(),
-        loggedIn: true,
-        user: "Testing",
-        clientName: petData.name,
-        tutorName: petData.tutorName,
-        selectedReport: reportTypes.find(report => report.value === selectedReport)?.label || selectedReport,
-        species: petData.species,
-        sex: petData.sex,
-        sterilization: petData.status,
-        referralClinic: petData.referenceClinic || "",
-        hasMicrochip: petData.hasMicrochip,
-        microchipNumber: petData.hasMicrochip ? petData.microchip : "",
-        infoAdicional: petData.additionalInfo || "",
-        audioData: audioData || "",
-        reportFileID: "",
-        selectedVet: null,
-        selectedClinic: {
-          address: "C/ lafuente, 32"
-        },
-        vetList: [
-          {
-            name: "Antonio",
-            number: "001"
-          },
-          {
-            name: "Miguel", 
-            number: "002"
-          }
-        ],
-        clinicList: [
-          {
-            address: "C/ lafuente, 32"
-          }
-        ]
-      };
+      // Crear los datos como URLSearchParams para formato form-encoded
+      const formData = new URLSearchParams();
+      formData.append('createdAt', new Date().toISOString());
+      formData.append('loggedIn', 'true');
+      formData.append('user', 'Testing');
+      formData.append('clientName', petData.name);
+      formData.append('tutorName', petData.tutorName);
+      formData.append('selectedReport', reportTypes.find(report => report.value === selectedReport)?.label || selectedReport);
+      formData.append('species', petData.species);
+      formData.append('sex', petData.sex);
+      formData.append('sterilization', petData.status);
+      formData.append('referralClinic', petData.referenceClinic || "");
+      formData.append('hasMicrochip', petData.hasMicrochip.toString());
+      formData.append('microchipNumber', petData.hasMicrochip ? petData.microchip : "");
+      formData.append('infoAdicional', petData.additionalInfo || "");
+      formData.append('audioData', audioData || "");
+      formData.append('reportFileID', "");
+      formData.append('selectedVet', 'null');
+      formData.append('selectedClinic', '');
+      formData.append('address', 'C/ lafuente, 32');
+      formData.append('vetList', '');
+      formData.append('0', '');
+      formData.append('name', 'Antonio');
+      formData.append('number', '001');
+      formData.append('1', '');
+      formData.append('name', 'Miguel');
+      formData.append('number', '002');
+      formData.append('clinicList', '');
+      formData.append('0', '');
+      formData.append('address', 'C/ lafuente, 32');
 
       const response = await fetch(webhookUrl, {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
+          "Content-Type": "application/x-www-form-urlencoded",
         },
         mode: "no-cors",
-        body: JSON.stringify(webhookData),
+        body: formData,
       });
 
       toast({
@@ -434,20 +496,42 @@ const VeterinaryReportForm: React.FC<VeterinaryReportFormProps> = () => {
                         ● Grabando
                       </Badge>
                     )}
+                    {audioData && !isRecording && (
+                      <Badge variant="default" className="px-3 py-1 text-sm">
+                        ✓ Audio guardado
+                      </Badge>
+                    )}
                   </div>
                   
-                  <Button
-                    onClick={toggleRecording}
-                    variant={isRecording ? "destructive" : "default"}
-                    size="lg"
-                    className="rounded-full w-20 h-20 shadow-xl hover:scale-110 transition-all duration-200 border-4 border-background"
-                  >
-                    {isRecording ? (
-                      <Square className="h-8 w-8" />
-                    ) : (
-                      <Mic className="h-8 w-8" />
+                  <div className="flex items-center space-x-3">
+                    {audioData && !isRecording && (
+                      <Button
+                        onClick={() => {
+                          setAudioData('');
+                          setRecordingTime(0);
+                        }}
+                        variant="outline"
+                        size="sm"
+                        className="h-10 rounded-lg"
+                      >
+                        Borrar Audio
+                      </Button>
                     )}
-                  </Button>
+                    
+                    <Button
+                      onClick={toggleRecording}
+                      disabled={isLoading}
+                      variant={isRecording ? "destructive" : "default"}
+                      size="lg"
+                      className="rounded-full w-20 h-20 shadow-xl hover:scale-110 transition-all duration-200 border-4 border-background"
+                    >
+                      {isRecording ? (
+                        <Square className="h-8 w-8" />
+                      ) : (
+                        <Mic className="h-8 w-8" />
+                      )}
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
