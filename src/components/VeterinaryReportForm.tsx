@@ -55,8 +55,8 @@ const VeterinaryReportForm: React.FC<VeterinaryReportFormProps> = () => {
   ];
 
   const veterinariansList = [
-    { id: '001', name: 'Dr. Elisa García' },
-    { id: '002', name: 'Dr. Miguel Rodríguez' },
+    { id: '001', name: 'Antonio' },
+    { id: '002', name: 'Miguel' },
     { id: '003', name: 'Dra. Ana López' }
   ];
 
@@ -125,22 +125,19 @@ const VeterinaryReportForm: React.FC<VeterinaryReportFormProps> = () => {
       formData.append('infoAdicional', petData.additionalInfo || "");
       formData.append('audioData', audioData || "");
       formData.append('reportFileID', "");
-      
-      if (selectedVet) {
-        formData.append('selectedVet[name]', selectedVet.name.replace(/^Dr\.|^Dra\./, '').trim());
-        formData.append('selectedVet[number]', selectedVet.id);
-      }
-      
-      formData.append('selectedClinic[address]', "C/ FUENTES, 48");
-      
-      // Agregar vetList
-      veterinariansList.forEach((vet, index) => {
-        formData.append(`vetList[${index}][name]`, vet.name.replace(/^Dr\.|^Dra\./, '').trim());
-        formData.append(`vetList[${index}][number]`, vet.id);
-      });
-      
-      // Agregar clinicList
-      formData.append('clinicList[0][address]', "C/ FUENTES, 48");
+      formData.append('selectedVet', '[null]');
+      formData.append('selectedClinic', '');
+      formData.append('address', 'C/ lafuente, 32');
+      formData.append('vetList', '');
+      formData.append('0', '');
+      formData.append('name', 'Antonio');
+      formData.append('number', '001');
+      formData.append('1', '');
+      formData.append('name', 'Miguel');
+      formData.append('number', '002');
+      formData.append('clinicList', '');
+      formData.append('0', '');
+      formData.append('address', 'C/ lafuente, 32');
 
       const response = await fetch(webhookUrl, {
         method: "POST",
@@ -189,7 +186,7 @@ const VeterinaryReportForm: React.FC<VeterinaryReportFormProps> = () => {
               
               <div className="flex items-center space-x-2 bg-white/10 px-3 py-2 rounded-lg backdrop-blur-sm">
                 <MapPin className="h-4 w-4" />
-                <span className="text-sm font-medium">C/ FUENTES, 48</span>
+                <span className="text-sm font-medium">C/ lafuente, 32</span>
               </div>
             </div>
           </div>
