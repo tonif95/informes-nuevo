@@ -13,6 +13,8 @@ export default defineConfig(({ mode }) => ({
   preview: {
     host: true,
     port: 8080,
+    // --- AÑADE ESTA LÍNEA ---
+    allowedHosts: ['informes-nuevo.onrender.com'],
   },
   // ----------------------------------------------------
   plugins: [
