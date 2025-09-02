@@ -87,8 +87,14 @@ const VeterinaryReportForm: React.FC<VeterinaryReportFormProps> = () => {
           } 
         });
 
+        // Intentar usar MP4 primero, si no funciona usar WebM
+        let mimeType = 'audio/mp4';
+        if (!MediaRecorder.isTypeSupported('audio/mp4')) {
+          mimeType = 'audio/webm;codecs=opus';
+        }
+
         const recorder = new MediaRecorder(stream, {
-          mimeType: 'audio/webm;codecs=opus'
+          mimeType: mimeType
         });
 
         const audioChunks: Blob[] = [];
@@ -98,12 +104,24 @@ const VeterinaryReportForm: React.FC<VeterinaryReportFormProps> = () => {
         };
 
         recorder.onstop = () => {
-          const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+          const audioBlob = new Blob(audioChunks, { type: mimeType });
           const reader = new FileReader();
           
           reader.onloadend = () => {
-            const base64String = reader.result as string;
+            let base64String = reader.result as string;
+            
+            // Si grabamos en WebM pero queremos etiquetar como MP4 para compatibilidad
+            if (mimeType.includes('webm')) {
+              // Cambiar el prefijo para que parezca MP4
+              base64String = base64String.replace('data:audio/webm', 'data:audio/mp4');
+            }
+            
             setAudioData(base64String);
+            
+            toast({
+              title: "Audio Guardado",
+              description: `Grabación completada (${formatTime(recordingTime)})`,
+            });
           };
           
           reader.readAsDataURL(audioBlob);
@@ -177,8 +195,8 @@ const VeterinaryReportForm: React.FC<VeterinaryReportFormProps> = () => {
     try {
       const selectedVet = veterinariansList.find(vet => vet.id === selectedVeterinarian);
       
-      // Crear los datos como URLSearchParams para formato form-encoded
-      const formData = new URLSearchParams();
+      // Crear FormData para enviar como parámetros individuales planos
+      const formData = new FormData();
       formData.append('createdAt', new Date().toISOString());
       formData.append('loggedIn', 'true');
       formData.append('user', 'Testing');
@@ -194,7 +212,7 @@ const VeterinaryReportForm: React.FC<VeterinaryReportFormProps> = () => {
       formData.append('infoAdicional', petData.additionalInfo || "");
       formData.append('audioData', audioData || "");
       formData.append('reportFileID', "");
-      formData.append('selectedVet', 'null');
+      formData.append('selectedVet', selectedVet ? `${selectedVet.name.replace(/^Dr\.|^Dra\./, '').trim()}` : 'null');
       formData.append('selectedClinic', '');
       formData.append('address', 'C/ lafuente, 32');
       formData.append('vetList', '');
@@ -210,9 +228,6 @@ const VeterinaryReportForm: React.FC<VeterinaryReportFormProps> = () => {
 
       const response = await fetch(webhookUrl, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
         mode: "no-cors",
         body: formData,
       });
