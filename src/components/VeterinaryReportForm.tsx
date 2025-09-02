@@ -21,6 +21,7 @@ import {
   Link
 } from 'lucide-react';
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 interface VeterinaryReportFormProps {}
 
 const VeterinaryReportForm: React.FC<VeterinaryReportFormProps> = () => {
@@ -107,47 +108,44 @@ const VeterinaryReportForm: React.FC<VeterinaryReportFormProps> = () => {
     try {
       const selectedVet = veterinariansList.find(vet => vet.id === selectedVeterinarian);
       
-      const webhookData = {
-        createdAt: new Date().toISOString(),
-        loggedIn: true,
-        user: "Sistema Veterinario",
-        clientName: petData.name,
-        tutorName: petData.tutorName,
-        selectedReport: reportTypes.find(report => report.value === selectedReport)?.label || selectedReport,
-        species: petData.species,
-        sex: petData.sex,
-        sterilization: petData.status,
-        referralClinic: petData.referenceClinic,
-        hasMicrochip: petData.hasMicrochip,
-        microchipNumber: petData.microchip,
-        infoAdicional: petData.additionalInfo,
-        audioData: audioData,
-        reportFileID: "",
-        selectedVet: selectedVet ? {
-          name: selectedVet.name.replace(/^Dr\.|^Dra\./, '').trim(),
-          number: selectedVet.id
-        } : null,
-        selectedClinic: {
-          address: "C/ FUENTES, 48"
-        },
-        vetList: veterinariansList.map(vet => ({
-          name: vet.name.replace(/^Dr\.|^Dra\./, '').trim(),
-          number: vet.id
-        })),
-        clinicList: [
-          {
-            address: "C/ FUENTES, 48"
-          }
-        ]
-      };
+      // Crear FormData para enviar como parámetros individuales
+      const formData = new FormData();
+      formData.append('createdAt', new Date().toISOString());
+      formData.append('loggedIn', 'true');
+      formData.append('user', 'Testing');
+      formData.append('clientName', petData.name);
+      formData.append('tutorName', petData.tutorName);
+      formData.append('selectedReport', reportTypes.find(report => report.value === selectedReport)?.label || selectedReport);
+      formData.append('species', petData.species);
+      formData.append('sex', petData.sex);
+      formData.append('sterilization', petData.status);
+      formData.append('referralClinic', petData.referenceClinic || "");
+      formData.append('hasMicrochip', petData.hasMicrochip.toString());
+      formData.append('microchipNumber', petData.hasMicrochip ? petData.microchip : "");
+      formData.append('infoAdicional', petData.additionalInfo || "");
+      formData.append('audioData', audioData || "");
+      formData.append('reportFileID', "");
+      
+      if (selectedVet) {
+        formData.append('selectedVet[name]', selectedVet.name.replace(/^Dr\.|^Dra\./, '').trim());
+        formData.append('selectedVet[number]', selectedVet.id);
+      }
+      
+      formData.append('selectedClinic[address]', "C/ FUENTES, 48");
+      
+      // Agregar vetList
+      veterinariansList.forEach((vet, index) => {
+        formData.append(`vetList[${index}][name]`, vet.name.replace(/^Dr\.|^Dra\./, '').trim());
+        formData.append(`vetList[${index}][number]`, vet.id);
+      });
+      
+      // Agregar clinicList
+      formData.append('clinicList[0][address]', "C/ FUENTES, 48");
 
       const response = await fetch(webhookUrl, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
         mode: "no-cors",
-        body: JSON.stringify(webhookData),
+        body: formData,
       });
 
       toast({
