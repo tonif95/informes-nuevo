@@ -14,7 +14,7 @@ export default defineConfig(({ mode }) => ({
     host: true,
     port: 8080,
     // --- AÑADE ESTA LÍNEA ---
-    allowedHosts: ['nuevo-informe-frontend.onrender.com'],
+    allowedHosts: ['informes-nuevo.onrender.com'],
   },
   // ----------------------------------------------------
   plugins: [
