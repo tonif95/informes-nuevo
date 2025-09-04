@@ -76,7 +76,7 @@ const VeterinaryApp = () => {
   const sexList = ['Macho', 'Hembra'];
   const statusList = ['Entero', 'Castrado'];
 
-  // Función de login que replica exactamente el comportamiento anterior
+  // Función de login que maneja correctamente los errores del servidor
   const handleLogin = async () => {
     if (!loginData.email || !loginData.password) {
       showToast("Error", "Por favor complete todos los campos", "destructive");
@@ -86,19 +86,18 @@ const VeterinaryApp = () => {
     setIsLoggingIn(true);
 
     try {
-      // URL del webhook de login (usando la misma base que proporcionaste)
-      const loginWebhookUrl = "https://automatizacion.aigencia.ai/webhook-test/8fb72b52-94d5-42c3-b6f6-3600d8a8ae40";
+      // URL del webhook de login
+      const loginWebhookUrl = "https://automatizacion.aigencia.ai/webhook/8fb72b52-94d5-42c3-b6f6-3600d8a8ae40";
 
-      // Crear FormData para enviar como campos individuales (como la interfaz anterior)
+      // Crear FormData para enviar como campos individuales
       const formData = new FormData();
       formData.append('email', loginData.email);
       formData.append('password', loginData.password);
 
       const response = await fetch(loginWebhookUrl, {
         method: "POST",
-        mode: "no-cors", // Importante para evitar problemas de CORS
         headers: {
-          // Replicar los headers que enviaba la interfaz anterior
+          // Headers estándar para la solicitud
           "sec-ch-ua": '"Not;A=Brand";v="99", "Google Chrome";v="139", "Chromium";v="139"',
           "sec-ch-ua-mobile": "?0",
           "sec-ch-ua-platform": '"Windows"',
@@ -109,17 +108,21 @@ const VeterinaryApp = () => {
         body: formData
       });
 
-      // Como usamos no-cors, no podemos leer la respuesta
-      // Simulamos login exitoso después de un delay
-      setTimeout(() => {
+      // Verificar si la respuesta fue exitosa
+      if (response.ok) {
+        // Login exitoso
         setIsLoggedIn(true);
         showToast("Login exitoso", `Bienvenido ${loginData.email}`);
-        setIsLoggingIn(false);
-      }, 1500);
+      } else {
+        // Error del servidor (500, 401, etc.)
+        console.error("Error del servidor:", response.status, response.statusText);
+        showToast("Error", `Error del servidor (${response.status}). Credenciales inválidas o problema en el servidor.`, "destructive");
+      }
 
     } catch (error) {
       console.error("Error en login:", error);
-      showToast("Error", "Error al iniciar sesión. Por favor intente nuevamente.", "destructive");
+      showToast("Error", "Error de conexión al servidor. Por favor verifique su conexión e intente nuevamente.", "destructive");
+    } finally {
       setIsLoggingIn(false);
     }
   };
@@ -458,7 +461,9 @@ const VeterinaryApp = () => {
               
               <div className="flex items-center space-x-2 bg-white/10 px-3 py-2 rounded-lg backdrop-blur-sm">
                 <MapPin className="h-4 w-4" />
-                <span className="text-sm font-medium">C/ lafuente, 32</span>
+                <span className="text-sm font-medium">
+                  {clinicsList[0]?.Direccion || clinicsList[0]?.address || 'C/ lafuente, 32'}
+                </span>
               </div>
 
               <Button 
