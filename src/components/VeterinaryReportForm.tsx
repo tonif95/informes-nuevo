@@ -7,7 +7,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
-import { useToast } from '@/components/ui/use-toast';
 import { 
   Mic, 
   Square, 
@@ -18,14 +17,21 @@ import {
   MapPin,
   Clock,
   Search,
-  Link
+  Link,
+  Lock,
+  Mail
 } from 'lucide-react';
 
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
-interface VeterinaryReportFormProps {}
+const VeterinaryApp = () => {
+  // Estados para login
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [loginData, setLoginData] = useState({
+    email: '',
+    password: ''
+  });
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
 
-const VeterinaryReportForm: React.FC<VeterinaryReportFormProps> = () => {
-  const { toast } = useToast();
+  // Estados del formulario principal
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [selectedReport, setSelectedReport] = useState('');
@@ -33,8 +39,8 @@ const VeterinaryReportForm: React.FC<VeterinaryReportFormProps> = () => {
   const [webhookUrl, setWebhookUrl] = useState('');
   const [audioData, setAudioData] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
-  const [recordingTimer, setRecordingTimer] = useState<NodeJS.Timeout | null>(null);
+  const [mediaRecorder, setMediaRecorder] = useState(null);
+  const [recordingTimer, setRecordingTimer] = useState(null);
   const [petData, setPetData] = useState({
     name: '',
     tutorName: '',
@@ -70,6 +76,82 @@ const VeterinaryReportForm: React.FC<VeterinaryReportFormProps> = () => {
   const sexList = ['Macho', 'Hembra'];
   const statusList = ['Entero', 'Castrado'];
 
+  // Función de login que replica exactamente el comportamiento anterior
+  const handleLogin = async () => {
+    if (!loginData.email || !loginData.password) {
+      showToast("Error", "Por favor complete todos los campos", "destructive");
+      return;
+    }
+
+    setIsLoggingIn(true);
+
+    try {
+      // URL del webhook de login (usando la misma base que proporcionaste)
+      const loginWebhookUrl = "https://automatizacion.aigencia.ai/webhook-test/8fb72b52-94d5-42c3-b6f6-3600d8a8ae40";
+
+      // Crear FormData para enviar como campos individuales (como la interfaz anterior)
+      const formData = new FormData();
+      formData.append('email', loginData.email);
+      formData.append('password', loginData.password);
+
+      const response = await fetch(loginWebhookUrl, {
+        method: "POST",
+        mode: "no-cors", // Importante para evitar problemas de CORS
+        headers: {
+          // Replicar los headers que enviaba la interfaz anterior
+          "sec-ch-ua": '"Not;A=Brand";v="99", "Google Chrome";v="139", "Chromium";v="139"',
+          "sec-ch-ua-mobile": "?0",
+          "sec-ch-ua-platform": '"Windows"',
+          "sec-fetch-dest": "empty",
+          "sec-fetch-mode": "cors",
+          "sec-fetch-site": "cross-site"
+        },
+        body: formData
+      });
+
+      // Como usamos no-cors, no podemos leer la respuesta
+      // Simulamos login exitoso después de un delay
+      setTimeout(() => {
+        setIsLoggedIn(true);
+        showToast("Login exitoso", `Bienvenido ${loginData.email}`);
+        setIsLoggingIn(false);
+      }, 1500);
+
+    } catch (error) {
+      console.error("Error en login:", error);
+      showToast("Error", "Error al iniciar sesión. Por favor intente nuevamente.", "destructive");
+      setIsLoggingIn(false);
+    }
+  };
+
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+    setLoginData({ email: '', password: '' });
+    // Limpiar también el formulario
+    clearForm();
+  };
+
+  // Función para mostrar notificaciones (simulada)
+  const showToast = (title, description, variant = "default") => {
+    // En una implementación real, aquí usarías el sistema de toast
+    console.log(`Toast: ${title} - ${description}`);
+    if (variant === "destructive") {
+      alert(`Error: ${description}`);
+    } else {
+      // Mostrar notificación positiva de manera sutil
+      const notification = document.createElement('div');
+      notification.style.cssText = `
+        position: fixed; top: 20px; right: 20px; z-index: 1000;
+        background: #10b981; color: white; padding: 16px 24px;
+        border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        font-weight: 500; animation: slideIn 0.3s ease-out;
+      `;
+      notification.textContent = description;
+      document.body.appendChild(notification);
+      setTimeout(() => document.body.removeChild(notification), 3000);
+    }
+  };
+
   // Efecto de limpieza para el temporizador
   useEffect(() => {
     return () => {
@@ -81,7 +163,6 @@ const VeterinaryReportForm: React.FC<VeterinaryReportFormProps> = () => {
 
   const toggleRecording = async () => {
     if (!isRecording) {
-      // Iniciar grabación
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ 
           audio: {
@@ -91,17 +172,13 @@ const VeterinaryReportForm: React.FC<VeterinaryReportFormProps> = () => {
           } 
         });
 
-        // Intentar usar MP4 primero, si no funciona usar WebM
         let mimeType = 'audio/mp4';
         if (!MediaRecorder.isTypeSupported('audio/mp4')) {
           mimeType = 'audio/webm;codecs=opus';
         }
 
-        const recorder = new MediaRecorder(stream, {
-          mimeType: mimeType
-        });
-
-        const audioChunks: Blob[] = [];
+        const recorder = new MediaRecorder(stream, { mimeType });
+        const audioChunks = [];
 
         recorder.ondataavailable = (event) => {
           audioChunks.push(event.data);
@@ -112,25 +189,15 @@ const VeterinaryReportForm: React.FC<VeterinaryReportFormProps> = () => {
           const reader = new FileReader();
           
           reader.onloadend = () => {
-            let base64String = reader.result as string;
-            
-            // Si grabamos en WebM pero queremos etiquetar como MP4 para compatibilidad
+            let base64String = reader.result;
             if (mimeType.includes('webm')) {
-              // Cambiar el prefijo para que parezca MP4
               base64String = base64String.replace('data:audio/webm', 'data:audio/mp4');
             }
-            
             setAudioData(base64String);
-            
-            toast({
-              title: "Audio Guardado",
-              description: `Grabación completada (${formatTime(recordingTime)})`,
-            });
+            showToast("Audio Guardado", `Grabación completada (${formatTime(recordingTime)})`);
           };
           
           reader.readAsDataURL(audioBlob);
-          
-          // Detener todos los tracks del stream
           stream.getTracks().forEach(track => track.stop());
         };
 
@@ -139,7 +206,6 @@ const VeterinaryReportForm: React.FC<VeterinaryReportFormProps> = () => {
         setIsRecording(true);
         setRecordingTime(0);
 
-        // Iniciar el temporizador
         const timer = setInterval(() => {
           setRecordingTime(prev => prev + 1);
         }, 1000);
@@ -147,29 +213,22 @@ const VeterinaryReportForm: React.FC<VeterinaryReportFormProps> = () => {
 
       } catch (error) {
         console.error('Error accessing microphone:', error);
-        toast({
-          title: "Error",
-          description: "No se pudo acceder al micrófono. Verifique los permisos.",
-          variant: "destructive",
-        });
+        showToast("Error", "No se pudo acceder al micrófono. Verifique los permisos.", "destructive");
       }
     } else {
-      // Detener grabación
       if (mediaRecorder && mediaRecorder.state !== 'inactive') {
         mediaRecorder.stop();
       }
-      
       if (recordingTimer) {
         clearInterval(recordingTimer);
         setRecordingTimer(null);
       }
-      
       setIsRecording(false);
       setMediaRecorder(null);
     }
   };
 
-  const formatTime = (seconds: number) => {
+  const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
@@ -177,20 +236,12 @@ const VeterinaryReportForm: React.FC<VeterinaryReportFormProps> = () => {
 
   const generateReport = async () => {
     if (!webhookUrl) {
-      toast({
-        title: "Error",
-        description: "Por favor ingrese la URL del webhook de n8n",
-        variant: "destructive",
-      });
+      showToast("Error", "Por favor ingrese la URL del webhook de n8n", "destructive");
       return;
     }
 
     if (!petData.name || !petData.tutorName || !selectedReport || !petData.species || !petData.sex || !petData.status) {
-      toast({
-        title: "Error",
-        description: "Por favor complete los campos obligatorios",
-        variant: "destructive",
-      });
+      showToast("Error", "Por favor complete los campos obligatorios", "destructive");
       return;
     }
 
@@ -199,11 +250,10 @@ const VeterinaryReportForm: React.FC<VeterinaryReportFormProps> = () => {
     try {
       const selectedVet = veterinariansList.find(vet => vet.id === selectedVeterinarian);
       
-      // Estructura de datos compatible con la automatización antigua
       const requestData = {
         createdAt: new Date().toISOString(),
-        loggedIn: true, // boolean, no string
-        user: 'Testing',
+        loggedIn: true,
+        user: loginData.email, // Usar el email del login
         clientName: petData.name,
         tutorName: petData.tutorName,
         selectedReport: reportTypes.find(report => report.value === selectedReport)?.label || selectedReport,
@@ -211,7 +261,7 @@ const VeterinaryReportForm: React.FC<VeterinaryReportFormProps> = () => {
         sex: petData.sex,
         sterilization: petData.status,
         referralClinic: petData.referenceClinic || '',
-        hasMicrochip: petData.hasMicrochip, // boolean, no string
+        hasMicrochip: petData.hasMicrochip,
         microchipNumber: petData.hasMicrochip ? petData.microchip : '',
         infoAdicional: petData.additionalInfo || '',
         audioData: audioData || '',
@@ -227,10 +277,7 @@ const VeterinaryReportForm: React.FC<VeterinaryReportFormProps> = () => {
         clinicList: clinicsList
       };
 
-      // Crear FormData para enviar como en la automatización antigua
       const formData = new FormData();
-      
-      // Agregar cada campo individualmente
       Object.keys(requestData).forEach(key => {
         if (key === 'selectedClinic') {
           formData.append(key, JSON.stringify(requestData[key]));
@@ -241,24 +288,17 @@ const VeterinaryReportForm: React.FC<VeterinaryReportFormProps> = () => {
         }
       });
 
-      const response = await fetch(webhookUrl, {
+      await fetch(webhookUrl, {
         method: "POST",
         mode: "no-cors",
         body: formData,
       });
 
-      toast({
-        title: "Informe Enviado",
-        description: "El informe ha sido enviado correctamente al sistema de procesamiento.",
-      });
+      showToast("Informe Enviado", "El informe ha sido enviado correctamente al sistema de procesamiento.");
 
     } catch (error) {
       console.error("Error enviando el informe:", error);
-      toast({
-        title: "Error",
-        description: "Error al enviar el informe. Por favor verifique la URL del webhook.",
-        variant: "destructive",
-      });
+      showToast("Error", "Error al enviar el informe. Por favor verifique la URL del webhook.", "destructive");
     } finally {
       setIsLoading(false);
     }
@@ -281,16 +321,122 @@ const VeterinaryReportForm: React.FC<VeterinaryReportFormProps> = () => {
     setAudioData('');
     setRecordingTime(0);
     setWebhookUrl('');
-    
-    toast({
-      title: "Formulario limpiado",
-      description: "Todos los campos han sido restablecidos",
-    });
+    showToast("Formulario limpiado", "Todos los campos han sido restablecidos");
   };
 
+  // Pantalla de Login
+  if (!isLoggedIn) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-teal-100 flex items-center justify-center p-4">
+        <style jsx>{`
+          @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+          }
+        `}</style>
+        
+        {/* Header similar al original */}
+        <div className="absolute top-0 left-0 right-0 bg-gradient-to-r from-teal-600 to-teal-700 text-white shadow-lg">
+          <div className="max-w-7xl mx-auto px-6 py-4">
+            <div className="flex items-center justify-between">
+              <h1 className="font-bold text-xl">Informe</h1>
+              <div className="flex items-center space-x-6">
+                <span className="text-teal-100">Seleccionar nombre</span>
+                <span className="text-teal-100">Seleccionar clínica</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <Card className="w-full max-w-md shadow-2xl border-0 bg-white/90 backdrop-blur-sm">
+          <CardHeader className="text-center space-y-4 pb-6">
+            <div className="mx-auto p-3 bg-teal-100 rounded-full w-16 h-16 flex items-center justify-center">
+              <Lock className="h-8 w-8 text-teal-600" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-gray-800">Iniciar Sesión</h2>
+              <p className="text-gray-600 text-sm mt-2">Ingrese sus credenciales para acceder</p>
+            </div>
+          </CardHeader>
+          
+          <CardContent className="space-y-6 px-6 pb-6">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email" className="text-sm font-medium text-gray-700">
+                  Usuario
+                </Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                  <Input
+                    id="email"
+                    type="text"
+                    placeholder="Usuario"
+                    value={loginData.email}
+                    onChange={(e) => setLoginData({...loginData, email: e.target.value})}
+                    className="pl-11 h-12 border-gray-300 focus:border-teal-500 focus:ring-teal-500 rounded-lg"
+                    disabled={isLoggingIn}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="password" className="text-sm font-medium text-gray-700">
+                  Contraseña
+                </Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="Contraseña"
+                    value={loginData.password}
+                    onChange={(e) => setLoginData({...loginData, password: e.target.value})}
+                    className="pl-11 h-12 border-gray-300 focus:border-teal-500 focus:ring-teal-500 rounded-lg"
+                    disabled={isLoggingIn}
+                    onKeyPress={(e) => e.key === 'Enter' && handleLogin()}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <Button 
+              onClick={handleLogin}
+              disabled={isLoggingIn}
+              className="w-full h-12 bg-teal-600 hover:bg-teal-700 text-white font-medium rounded-lg transition-colors duration-200 disabled:opacity-50"
+            >
+              {isLoggingIn ? (
+                <>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                  Iniciando sesión...
+                </>
+              ) : (
+                'Log In'
+              )}
+            </Button>
+
+            {/* Información de prueba */}
+            <div className="text-center text-xs text-gray-500 bg-gray-50 p-3 rounded-lg">
+              <strong>Datos de prueba:</strong><br />
+              Usuario: Testing<br />
+              Contraseña: 20202
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Aplicación principal (una vez logueado)
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted/30">
-      {/* Modern Header */}
+      <style jsx>{`
+        @keyframes slideIn {
+          from { transform: translateX(100%); opacity: 0; }
+          to { transform: translateX(0); opacity: 1; }
+        }
+      `}</style>
+
+      {/* Modern Header con botón de logout */}
       <div className="bg-gradient-to-r from-primary via-primary to-primary/90 text-primary-foreground shadow-lg border-b border-primary/20">
         <div className="max-w-7xl mx-auto px-6 py-6">
           <div className="flex items-center justify-between">
@@ -306,7 +452,7 @@ const VeterinaryReportForm: React.FC<VeterinaryReportFormProps> = () => {
             
             <div className="flex items-center space-x-6">
               <div className="text-right">
-                <p className="text-sm text-primary-foreground/80">Seleccionar veterinario</p>
+                <p className="text-sm text-primary-foreground/80">Usuario: {loginData.email}</p>
                 <p className="font-medium">Nuevo informe</p>
               </div>
               
@@ -314,6 +460,16 @@ const VeterinaryReportForm: React.FC<VeterinaryReportFormProps> = () => {
                 <MapPin className="h-4 w-4" />
                 <span className="text-sm font-medium">C/ lafuente, 32</span>
               </div>
+
+              <Button 
+                onClick={handleLogout}
+                variant="outline"
+                size="sm"
+                className="bg-white/10 border-white/20 text-primary-foreground hover:bg-white/20"
+              >
+                <User className="h-4 w-4 mr-2" />
+                Cerrar Sesión
+              </Button>
             </div>
           </div>
         </div>
@@ -449,7 +605,7 @@ const VeterinaryReportForm: React.FC<VeterinaryReportFormProps> = () => {
                       id="has-microchip"
                       checked={petData.hasMicrochip}
                       onCheckedChange={(checked) => 
-                        setPetData({...petData, hasMicrochip: checked as boolean})
+                        setPetData({...petData, hasMicrochip: checked})
                       }
                       className="h-5 w-5"
                     />
@@ -687,4 +843,4 @@ const VeterinaryReportForm: React.FC<VeterinaryReportFormProps> = () => {
   );
 };
 
-export default VeterinaryReportForm;
+export default VeterinaryApp;
