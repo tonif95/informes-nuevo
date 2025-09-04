@@ -62,6 +62,10 @@ const VeterinaryReportForm: React.FC<VeterinaryReportFormProps> = () => {
     { id: '003', name: 'Dra. Ana López' }
   ];
 
+  const clinicsList = [
+    { address: 'C/ lafuente, 32' }
+  ];
+
   const speciesList = ['Perro', 'Gato', 'Conejo', 'Otro'];
   const sexList = ['Macho', 'Hembra'];
   const statusList = ['Entero', 'Castrado'];
@@ -195,36 +199,47 @@ const VeterinaryReportForm: React.FC<VeterinaryReportFormProps> = () => {
     try {
       const selectedVet = veterinariansList.find(vet => vet.id === selectedVeterinarian);
       
-      // Crear FormData para enviar como parámetros individuales planos
+      // Estructura de datos compatible con la automatización antigua
+      const requestData = {
+        createdAt: new Date().toISOString(),
+        loggedIn: true, // boolean, no string
+        user: 'Testing',
+        clientName: petData.name,
+        tutorName: petData.tutorName,
+        selectedReport: reportTypes.find(report => report.value === selectedReport)?.label || selectedReport,
+        species: petData.species,
+        sex: petData.sex,
+        sterilization: petData.status,
+        referralClinic: petData.referenceClinic || '',
+        hasMicrochip: petData.hasMicrochip, // boolean, no string
+        microchipNumber: petData.hasMicrochip ? petData.microchip : '',
+        infoAdicional: petData.additionalInfo || '',
+        audioData: audioData || '',
+        reportFileID: '',
+        selectedVet: selectedVet ? selectedVet.name.replace(/^Dr\.|^Dra\./, '').trim() : null,
+        selectedClinic: {
+          address: 'C/ lafuente, 32'
+        },
+        vetList: veterinariansList.map(vet => ({
+          name: vet.name,
+          number: vet.id
+        })),
+        clinicList: clinicsList
+      };
+
+      // Crear FormData para enviar como en la automatización antigua
       const formData = new FormData();
-      formData.append('createdAt', new Date().toISOString());
-      formData.append('loggedIn', 'true');
-      formData.append('user', 'Testing');
-      formData.append('clientName', petData.name);
-      formData.append('tutorName', petData.tutorName);
-      formData.append('selectedReport', reportTypes.find(report => report.value === selectedReport)?.label || selectedReport);
-      formData.append('species', petData.species);
-      formData.append('sex', petData.sex);
-      formData.append('sterilization', petData.status);
-      formData.append('referralClinic', petData.referenceClinic || "");
-      formData.append('hasMicrochip', petData.hasMicrochip.toString());
-      formData.append('microchipNumber', petData.hasMicrochip ? petData.microchip : "");
-      formData.append('infoAdicional', petData.additionalInfo || "");
-      formData.append('audioData', audioData || "");
-      formData.append('reportFileID', "");
-      formData.append('selectedVet', selectedVet ? `${selectedVet.name.replace(/^Dr\.|^Dra\./, '').trim()}` : 'null');
-      formData.append('selectedClinic', '');
-      formData.append('address', 'C/ lafuente, 32');
-      formData.append('vetList', '');
-      formData.append('0', '');
-      formData.append('name', 'Antonio');
-      formData.append('number', '001');
-      formData.append('1', '');
-      formData.append('name', 'Miguel');
-      formData.append('number', '002');
-      formData.append('clinicList', '');
-      formData.append('0', '');
-      formData.append('address', 'C/ lafuente, 32');
+      
+      // Agregar cada campo individualmente
+      Object.keys(requestData).forEach(key => {
+        if (key === 'selectedClinic') {
+          formData.append(key, JSON.stringify(requestData[key]));
+        } else if (key === 'vetList' || key === 'clinicList') {
+          formData.append(key, JSON.stringify(requestData[key]));
+        } else {
+          formData.append(key, String(requestData[key]));
+        }
+      });
 
       const response = await fetch(webhookUrl, {
         method: "POST",
@@ -247,6 +262,30 @@ const VeterinaryReportForm: React.FC<VeterinaryReportFormProps> = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const clearForm = () => {
+    setPetData({
+      name: '',
+      tutorName: '',
+      species: '',
+      sex: '',
+      status: '',
+      microchip: '',
+      hasMicrochip: false,
+      referenceClinic: '',
+      additionalInfo: ''
+    });
+    setSelectedReport('');
+    setSelectedVeterinarian('');
+    setAudioData('');
+    setRecordingTime(0);
+    setWebhookUrl('');
+    
+    toast({
+      title: "Formulario limpiado",
+      description: "Todos los campos han sido restablecidos",
+    });
   };
 
   return (
@@ -633,6 +672,7 @@ const VeterinaryReportForm: React.FC<VeterinaryReportFormProps> = () => {
               
               <Button 
                 variant="ghost" 
+                onClick={clearForm}
                 className="w-full h-12 hover:bg-muted/50 transition-all duration-200 rounded-xl text-base font-medium"
               >
                 <Square className="mr-2 h-4 w-4" />
