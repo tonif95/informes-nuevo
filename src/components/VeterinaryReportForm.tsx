@@ -22,6 +22,20 @@ import {
 } from 'lucide-react';
 
 const VeterinaryApp = () => {
+  // Configurar para iframe
+  useEffect(() => {
+    // Permitir que la aplicación funcione en iframe
+    if (window.self !== window.top) {
+      // Estamos dentro de un iframe
+      try {
+        // Configurar comunicación con parent frame si es necesario
+        window.parent.postMessage({ type: 'app_loaded', source: 'veterinary_app' }, '*');
+      } catch (e) {
+        console.log('Running in iframe with restricted access');
+      }
+    }
+  }, []);
+
   // Estados para login
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [loginData, setLoginData] = useState({
@@ -290,6 +304,10 @@ const VeterinaryApp = () => {
       await fetch(WEBHOOK_URL, {
         method: "POST",
         mode: "no-cors",
+        headers: {
+          // Headers optimizados para iframe
+          'X-Requested-With': 'XMLHttpRequest',
+        },
         body: formData,
       });
 
@@ -325,11 +343,21 @@ const VeterinaryApp = () => {
   // Pantalla de Login
   if (!isLoggedIn) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-teal-100 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-teal-100 flex items-center justify-center p-4" style={{ 
+        minHeight: window.self !== window.top ? '100vh' : 'auto',
+        height: window.self !== window.top ? '100vh' : 'auto'
+      }}>
         <style jsx>{`
           @keyframes slideIn {
             from { transform: translateX(100%); opacity: 0; }
             to { transform: translateX(0); opacity: 1; }
+          }
+          
+          /* Estilos para iframe en login */
+          body {
+            margin: 0 !important;
+            padding: 0 !important;
+            overflow: auto !important;
           }
         `}</style>
         
@@ -426,11 +454,36 @@ const VeterinaryApp = () => {
 
   // Aplicación principal (una vez logueado)
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-muted/30">
+    <div className="min-h-screen bg-gradient-to-br from-background to-muted/30" style={{ 
+      minHeight: window.self !== window.top ? '100vh' : 'auto',
+      height: window.self !== window.top ? '100vh' : 'auto',
+      overflow: window.self !== window.top ? 'auto' : 'visible'
+    }}>
       <style jsx>{`
         @keyframes slideIn {
           from { transform: translateX(100%); opacity: 0; }
           to { transform: translateX(0); opacity: 1; }
+        }
+        
+        /* Estilos específicos para iframe */
+        body {
+          margin: 0 !important;
+          padding: 0 !important;
+        }
+        
+        html, body {
+          height: 100% !important;
+          overflow-x: hidden !important;
+        }
+        
+        /* Evitar problemas de z-index en iframe */
+        .relative {
+          z-index: 1;
+        }
+        
+        /* Asegurar que los select/dropdown funcionen en iframe */
+        [data-radix-portal] {
+          z-index: 999999 !important;
         }
       `}</style>
 
@@ -487,7 +540,7 @@ const VeterinaryApp = () => {
                     <FileText className="h-6 w-6 text-primary" />
                   </div>
                   <div>
-                    <h2 className="text-2xl font-bold text-foreground">Datos del paciente</h2>
+                    <h2 className="text-2xl font-bold text-foreground">Información del Informe</h2>
                     <p className="text-sm text-muted-foreground">Complete los datos del paciente</p>
                   </div>
                 </div>
@@ -522,7 +575,7 @@ const VeterinaryApp = () => {
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="space-y-3">
                     <Label htmlFor="pet-name" className="text-base font-semibold text-foreground">
-                      Nombre de paciente *
+                      Nombre de mascota *
                     </Label>
                     <Input
                       id="pet-name"
@@ -736,8 +789,8 @@ const VeterinaryApp = () => {
                     <Stethoscope className="h-6 w-6 text-success" />
                   </div>
                   <div>
-                    <h3 className="text-xl font-bold text-foreground">Seleccionar Profesional</h3>
-                    <p className="text-sm text-muted-foreground">Busque y seleccione el profesional</p>
+                    <h3 className="text-xl font-bold text-foreground">Seleccionar Veterinario</h3>
+                    <p className="text-sm text-muted-foreground">Busque y seleccione el veterinario</p>
                   </div>
                 </div>
               </CardHeader>
