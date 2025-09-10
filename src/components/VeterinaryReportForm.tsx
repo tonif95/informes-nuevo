@@ -17,7 +17,6 @@ import {
   MapPin,
   Clock,
   Search,
-  Link,
   Lock,
   Mail
 } from 'lucide-react';
@@ -36,7 +35,6 @@ const VeterinaryApp = () => {
   const [recordingTime, setRecordingTime] = useState(0);
   const [selectedReport, setSelectedReport] = useState('');
   const [selectedVeterinarian, setSelectedVeterinarian] = useState('');
-  const [webhookUrl, setWebhookUrl] = useState('');
   const [audioData, setAudioData] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [mediaRecorder, setMediaRecorder] = useState(null);
@@ -52,6 +50,9 @@ const VeterinaryApp = () => {
     referenceClinic: '',
     additionalInfo: ''
   });
+
+  // Webhook URL fijo
+  const WEBHOOK_URL = 'https://automatizacion.aigencia.ai/webhook/c4e16388-532b-4a73-b6c1-d1f7e318041c';
 
   const reportTypes = [
     { value: 'anamnesis', label: 'Anamnesis', icon: FileText },
@@ -238,11 +239,6 @@ const VeterinaryApp = () => {
   };
 
   const generateReport = async () => {
-    if (!webhookUrl) {
-      showToast("Error", "Por favor ingrese la URL del webhook de n8n", "destructive");
-      return;
-    }
-
     if (!petData.name || !petData.tutorName || !selectedReport || !petData.species || !petData.sex || !petData.status) {
       showToast("Error", "Por favor complete los campos obligatorios", "destructive");
       return;
@@ -291,7 +287,7 @@ const VeterinaryApp = () => {
         }
       });
 
-      await fetch(webhookUrl, {
+      await fetch(WEBHOOK_URL, {
         method: "POST",
         mode: "no-cors",
         body: formData,
@@ -301,7 +297,7 @@ const VeterinaryApp = () => {
 
     } catch (error) {
       console.error("Error enviando el informe:", error);
-      showToast("Error", "Error al enviar el informe. Por favor verifique la URL del webhook.", "destructive");
+      showToast("Error", "Error al enviar el informe. Por favor intente nuevamente.", "destructive");
     } finally {
       setIsLoading(false);
     }
@@ -323,7 +319,6 @@ const VeterinaryApp = () => {
     setSelectedVeterinarian('');
     setAudioData('');
     setRecordingTime(0);
-    setWebhookUrl('');
     showToast("Formulario limpiado", "Todos los campos han sido restablecidos");
   };
 
@@ -492,7 +487,7 @@ const VeterinaryApp = () => {
                     <FileText className="h-6 w-6 text-primary" />
                   </div>
                   <div>
-                    <h2 className="text-2xl font-bold text-foreground">Información del Informe</h2>
+                    <h2 className="text-2xl font-bold text-foreground">Datos del paciente</h2>
                     <p className="text-sm text-muted-foreground">Complete los datos del paciente</p>
                   </div>
                 </div>
@@ -527,7 +522,7 @@ const VeterinaryApp = () => {
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="space-y-3">
                     <Label htmlFor="pet-name" className="text-base font-semibold text-foreground">
-                      Nombre de mascota *
+                      Nombre de paciente *
                     </Label>
                     <Input
                       id="pet-name"
@@ -657,28 +652,6 @@ const VeterinaryApp = () => {
                   />
                 </div>
 
-                {/* Webhook URL */}
-                <div className="space-y-3 p-6 bg-muted/20 rounded-xl border border-border/50">
-                  <div className="flex items-center space-x-3">
-                    <div className="p-2 bg-primary/10 rounded-lg">
-                      <Link className="h-5 w-5 text-primary" />
-                    </div>
-                    <div>
-                      <Label htmlFor="webhook-url" className="text-base font-semibold text-foreground">
-                        URL del Webhook n8n *
-                      </Label>
-                      <p className="text-sm text-muted-foreground">URL del webhook para procesar el informe</p>
-                    </div>
-                  </div>
-                  <Input
-                    id="webhook-url"
-                    placeholder="https://automatizacion.aigencia.ai/webhook/..."
-                    value={webhookUrl}
-                    onChange={(e) => setWebhookUrl(e.target.value)}
-                    className="h-12 bg-background border-2 border-border hover:border-primary focus:border-primary transition-colors rounded-xl"
-                  />
-                </div>
-
               </CardContent>
             </Card>
 
@@ -763,8 +736,8 @@ const VeterinaryApp = () => {
                     <Stethoscope className="h-6 w-6 text-success" />
                   </div>
                   <div>
-                    <h3 className="text-xl font-bold text-foreground">Seleccionar Veterinario</h3>
-                    <p className="text-sm text-muted-foreground">Busque y seleccione el veterinario</p>
+                    <h3 className="text-xl font-bold text-foreground">Seleccionar Profesional</h3>
+                    <p className="text-sm text-muted-foreground">Busque y seleccione el profesional</p>
                   </div>
                 </div>
               </CardHeader>
