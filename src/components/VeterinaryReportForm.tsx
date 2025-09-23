@@ -18,17 +18,15 @@ import {
   Clock,
   Search,
   Lock,
-  Mail
+  Mail,
+  Send
 } from 'lucide-react';
 
 const VeterinaryApp = () => {
   // Configurar para iframe
   useEffect(() => {
-    // Permitir que la aplicación funcione en iframe
     if (window.self !== window.top) {
-      // Estamos dentro de un iframe
       try {
-        // Configurar comunicación con parent frame si es necesario
         window.parent.postMessage({ type: 'app_loaded', source: 'veterinary_app' }, '*');
       } catch (e) {
         console.log('Running in iframe with restricted access');
@@ -91,7 +89,7 @@ const VeterinaryApp = () => {
   const sexList = ['Macho', 'Hembra'];
   const statusList = ['Entero', 'Castrado'];
 
-  // Función de login que maneja correctamente los errores del servidor
+  // Función de login
   const handleLogin = async () => {
     if (!loginData.email || !loginData.password) {
       showToast("Error", "Por favor complete todos los campos", "destructive");
@@ -101,10 +99,7 @@ const VeterinaryApp = () => {
     setIsLoggingIn(true);
 
     try {
-      // URL del webhook de login
       const loginWebhookUrl = "https://automatizacion.aigencia.ai/webhook/8fb72b52-94d5-42c3-b6f6-3600d8a8ae40";
-
-      // Crear FormData para enviar como campos individuales
       const formData = new FormData();
       formData.append('email', loginData.email);
       formData.append('password', loginData.password);
@@ -112,7 +107,6 @@ const VeterinaryApp = () => {
       const response = await fetch(loginWebhookUrl, {
         method: "POST",
         headers: {
-          // Headers estándar para la solicitud
           "sec-ch-ua": '"Not;A=Brand";v="99", "Google Chrome";v="139", "Chromium";v="139"',
           "sec-ch-ua-mobile": "?0",
           "sec-ch-ua-platform": '"Windows"',
@@ -123,13 +117,10 @@ const VeterinaryApp = () => {
         body: formData
       });
 
-      // Verificar si la respuesta fue exitosa
       if (response.ok) {
-        // Login exitoso
         setIsLoggedIn(true);
         showToast("Login exitoso", `Bienvenido ${loginData.email}`);
       } else {
-        // Error del servidor (500, 401, etc.)
         console.error("Error del servidor:", response.status, response.statusText);
         showToast("Error", `Error del servidor (${response.status}). Credenciales inválidas o problema en el servidor.`, "destructive");
       }
@@ -145,18 +136,15 @@ const VeterinaryApp = () => {
   const handleLogout = () => {
     setIsLoggedIn(false);
     setLoginData({ email: '', password: '' });
-    // Limpiar también el formulario
     clearForm();
   };
 
-  // Función para mostrar notificaciones (simulada)
+  // Función para mostrar notificaciones
   const showToast = (title, description, variant = "default") => {
-    // En una implementación real, aquí usarías el sistema de toast
     console.log(`Toast: ${title} - ${description}`);
     if (variant === "destructive") {
       alert(`Error: ${description}`);
     } else {
-      // Mostrar notificación positiva de manera sutil
       const notification = document.createElement('div');
       notification.style.cssText = `
         position: fixed; top: 20px; right: 20px; z-index: 1000;
@@ -266,7 +254,7 @@ const VeterinaryApp = () => {
       const requestData = {
         createdAt: new Date().toISOString(),
         loggedIn: true,
-        user: loginData.email, // Usar el email del login
+        user: loginData.email,
         clientName: petData.name,
         tutorName: petData.tutorName,
         selectedReport: reportTypes.find(report => report.value === selectedReport)?.label || selectedReport,
@@ -305,7 +293,6 @@ const VeterinaryApp = () => {
         method: "POST",
         mode: "no-cors",
         headers: {
-          // Headers optimizados para iframe
           'X-Requested-With': 'XMLHttpRequest',
         },
         body: formData,
@@ -340,10 +327,10 @@ const VeterinaryApp = () => {
     showToast("Formulario limpiado", "Todos los campos han sido restablecidos");
   };
 
-  // Pantalla de Login
+  // Pantalla de Login con gradientes
   if (!isLoggedIn) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-teal-100 flex items-center justify-center p-4" style={{ 
+      <div className="min-h-screen bg-gray-50" style={{ 
         minHeight: window.self !== window.top ? '100vh' : 'auto',
         height: window.self !== window.top ? '100vh' : 'auto'
       }}>
@@ -353,7 +340,6 @@ const VeterinaryApp = () => {
             to { transform: translateX(0); opacity: 1; }
           }
           
-          /* Estilos para iframe en login */
           body {
             margin: 0 !important;
             padding: 0 !important;
@@ -361,100 +347,104 @@ const VeterinaryApp = () => {
           }
         `}</style>
         
-        {/* Header similar al original */}
-        <div className="absolute top-0 left-0 right-0 bg-gradient-to-r from-teal-600 to-teal-700 text-white shadow-lg">
-          <div className="max-w-7xl mx-auto px-6 py-4">
-            <div className="flex items-center justify-between">
-              <h1 className="font-bold text-xl">Informe</h1>
-              <div className="flex items-center space-x-6">
-                <span className="text-teal-100">Seleccionar nombre</span>
-                <span className="text-teal-100">Seleccionar clínica</span>
+        {/* Header con gradiente como en la plantilla */}
+        <div className="bg-gradient-to-r from-cyan-500 via-cyan-400 to-teal-400 text-white">
+          <div className="max-w-7xl mx-auto px-6 py-8">
+            <div className="flex items-center space-x-4 mb-2">
+              <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                <Stethoscope className="h-8 w-8 text-white" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold">Automatización de informes clínicos</h1>
+                <p className="text-cyan-100 text-lg mt-1">Automatización de consultas y reportes médicos</p>
               </div>
             </div>
           </div>
         </div>
 
-        <Card className="w-full max-w-md shadow-2xl border-0 bg-white/90 backdrop-blur-sm">
-          <CardHeader className="text-center space-y-4 pb-6">
-            <div className="mx-auto p-3 bg-teal-100 rounded-full w-16 h-16 flex items-center justify-center">
-              <Lock className="h-8 w-8 text-teal-600" />
-            </div>
-            <div>
-              <h2 className="text-2xl font-bold text-gray-800">Iniciar Sesión</h2>
-              <p className="text-gray-600 text-sm mt-2">Ingrese sus credenciales para acceder</p>
-            </div>
-          </CardHeader>
-          
-          <CardContent className="space-y-6 px-6 pb-6">
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-sm font-medium text-gray-700">
-                  Usuario
-                </Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                  <Input
-                    id="email"
-                    type="text"
-                    placeholder="Usuario"
-                    value={loginData.email}
-                    onChange={(e) => setLoginData({...loginData, email: e.target.value})}
-                    className="pl-11 h-12 border-gray-300 focus:border-teal-500 focus:ring-teal-500 rounded-lg"
-                    disabled={isLoggingIn}
-                  />
+        <div className="flex items-center justify-center p-8">
+          <Card className="w-full max-w-md shadow-xl border-0 bg-white">
+            <CardHeader className="text-center space-y-4 pb-6">
+              <div className="mx-auto p-3 bg-gradient-to-r from-cyan-100 to-teal-100 rounded-full w-16 h-16 flex items-center justify-center">
+                <Lock className="h-8 w-8 text-cyan-600" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-gray-800">Iniciar Sesión</h2>
+                <p className="text-gray-600 text-sm mt-2">Ingrese sus credenciales para acceder al sistema</p>
+              </div>
+            </CardHeader>
+            
+            <CardContent className="space-y-6 px-6 pb-6">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email" className="text-sm font-medium text-gray-700">
+                    Usuario
+                  </Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                    <Input
+                      id="email"
+                      type="text"
+                      placeholder="Usuario"
+                      value={loginData.email}
+                      onChange={(e) => setLoginData({...loginData, email: e.target.value})}
+                      className="pl-11 h-12 border-gray-300 focus:border-cyan-500 focus:ring-cyan-500 rounded-lg"
+                      disabled={isLoggingIn}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="password" className="text-sm font-medium text-gray-700">
+                    Contraseña
+                  </Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                    <Input
+                      id="password"
+                      type="password"
+                      placeholder="Contraseña"
+                      value={loginData.password}
+                      onChange={(e) => setLoginData({...loginData, password: e.target.value})}
+                      className="pl-11 h-12 border-gray-300 focus:border-cyan-500 focus:ring-cyan-500 rounded-lg"
+                      disabled={isLoggingIn}
+                      onKeyPress={(e) => e.key === 'Enter' && handleLogin()}
+                    />
+                  </div>
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="password" className="text-sm font-medium text-gray-700">
-                  Contraseña
-                </Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="Contraseña"
-                    value={loginData.password}
-                    onChange={(e) => setLoginData({...loginData, password: e.target.value})}
-                    className="pl-11 h-12 border-gray-300 focus:border-teal-500 focus:ring-teal-500 rounded-lg"
-                    disabled={isLoggingIn}
-                    onKeyPress={(e) => e.key === 'Enter' && handleLogin()}
-                  />
-                </div>
+              <Button 
+                onClick={handleLogin}
+                disabled={isLoggingIn}
+                className="w-full h-12 bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-600 hover:to-teal-600 text-white font-medium rounded-lg transition-all duration-200 disabled:opacity-50 shadow-lg"
+              >
+                {isLoggingIn ? (
+                  <>
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                    Iniciando sesión...
+                  </>
+                ) : (
+                  'Iniciar Sesión'
+                )}
+              </Button>
+
+              {/* Información de prueba */}
+              <div className="text-center text-xs text-gray-500 bg-gradient-to-r from-cyan-50 to-teal-50 p-3 rounded-lg border border-cyan-200">
+                <strong>Datos de prueba:</strong><br />
+                Usuario: Testing<br />
+                Contraseña: 20202
               </div>
-            </div>
-
-            <Button 
-              onClick={handleLogin}
-              disabled={isLoggingIn}
-              className="w-full h-12 bg-teal-600 hover:bg-teal-700 text-white font-medium rounded-lg transition-colors duration-200 disabled:opacity-50"
-            >
-              {isLoggingIn ? (
-                <>
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                  Iniciando sesión...
-                </>
-              ) : (
-                'Log In'
-              )}
-            </Button>
-
-            {/* Información de prueba */}
-            <div className="text-center text-xs text-gray-500 bg-gray-50 p-3 rounded-lg">
-              <strong>Datos de prueba:</strong><br />
-              Usuario: Testing<br />
-              Contraseña: 20202
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }
 
-  // Aplicación principal (una vez logueado)
+  // Aplicación principal con el nuevo diseño
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-muted/30" style={{ 
+    <div className="min-h-screen bg-gray-50" style={{ 
       minHeight: window.self !== window.top ? '100vh' : 'auto',
       height: window.self !== window.top ? '100vh' : 'auto',
       overflow: window.self !== window.top ? 'auto' : 'visible'
@@ -465,7 +455,15 @@ const VeterinaryApp = () => {
           to { transform: translateX(0); opacity: 1; }
         }
         
-        /* Estilos específicos para iframe */
+        @keyframes pulse {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.05); }
+        }
+        
+        .pulse-animation {
+          animation: pulse 2s infinite;
+        }
+        
         body {
           margin: 0 !important;
           padding: 0 !important;
@@ -476,49 +474,34 @@ const VeterinaryApp = () => {
           overflow-x: hidden !important;
         }
         
-        /* Evitar problemas de z-index en iframe */
         .relative {
           z-index: 1;
         }
         
-        /* Asegurar que los select/dropdown funcionen en iframe */
         [data-radix-portal] {
           z-index: 999999 !important;
         }
       `}</style>
 
-      {/* Modern Header con botón de logout */}
-      <div className="bg-gradient-to-r from-primary via-primary to-primary/90 text-primary-foreground shadow-lg border-b border-primary/20">
-        <div className="max-w-7xl mx-auto px-6 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-white/10 rounded-lg backdrop-blur-sm">
-                <Heart className="h-7 w-7" />
+      <div className="max-w-4xl mx-auto">
+        {/* Header principal con gradiente como en la plantilla */}
+        <div className="bg-gradient-to-r from-cyan-500 via-cyan-400 to-teal-400 text-white rounded-t-lg">
+          <div className="px-6 py-8">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                  <Stethoscope className="h-8 w-8 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-3xl font-bold">Automatización de informes clínicos con voz</h1>
+                  <p className="text-cyan-100 text-lg mt-1">Automatización de consultas y reportes médicos</p>
+                </div>
               </div>
-              <div>
-                <h1 className="font-bold text-2xl tracking-tight">Sistema de Informes</h1>
-                <p className="text-primary-foreground/80 text-sm">Gestión Veterinaria</p>
-              </div>
-            </div>
-            
-            <div className="flex items-center space-x-6">
-              <div className="text-right">
-                <p className="text-sm text-primary-foreground/80">Usuario: {loginData.email}</p>
-                <p className="font-medium">Nuevo informe</p>
-              </div>
-              
-              <div className="flex items-center space-x-2 bg-white/10 px-3 py-2 rounded-lg backdrop-blur-sm">
-                <MapPin className="h-4 w-4" />
-                <span className="text-sm font-medium">
-                  {clinicsList[0]?.Direccion || clinicsList[0]?.address || 'C/ lafuente, 32'}
-                </span>
-              </div>
-
               <Button 
                 onClick={handleLogout}
-                variant="outline"
+                variant="ghost"
                 size="sm"
-                className="bg-white/10 border-white/20 text-primary-foreground hover:bg-white/20"
+                className="text-white hover:bg-white/10 border border-white/20"
               >
                 <User className="h-4 w-4 mr-2" />
                 Cerrar Sesión
@@ -526,347 +509,325 @@ const VeterinaryApp = () => {
             </div>
           </div>
         </div>
-      </div>
 
-      <div className="max-w-7xl mx-auto px-6 py-10">
-        <div className="grid lg:grid-cols-3 gap-8">
-          
-          {/* Main Form */}
-          <div className="lg:col-span-2 space-y-8">
-            <Card className="shadow-lg border-0 bg-card/60 backdrop-blur-sm overflow-hidden">
-              <CardHeader className="bg-gradient-to-r from-primary/5 to-primary/10 border-b border-border/50">
+        {/* Botón Nueva Consulta */}
+        <div className="bg-white border-l border-r border-gray-200 px-6 py-4">
+          <div className="flex items-center justify-between">
+            <Button className="bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-600 hover:to-teal-600 text-white px-8 py-3 rounded-lg font-semibold shadow-lg">
+              <FileText className="h-5 w-5 mr-2" />
+              Nueva Consulta
+            </Button>
+          </div>
+        </div>
+
+        {/* Resto del contenido */}
+        <div className="bg-white border border-gray-200 rounded-b-lg shadow-sm p-6">
+          <div className="mb-8">
+            <div className="flex items-center space-x-3 mb-6">
+              <FileText className="h-6 w-6 text-cyan-600" />
+              <h2 className="text-xl font-semibold text-gray-800">Registro de Nueva Consulta</h2>
+            </div>
+          </div>
+
+          {/* Grabación de Consulta - Sección central destacada */}
+          <div className="mb-8">
+            <Card className="bg-white shadow-sm border-gray-200 overflow-hidden">
+              <CardHeader className="bg-gradient-to-r from-cyan-50 to-teal-50 border-b border-cyan-100">
                 <div className="flex items-center space-x-3">
-                  <div className="p-2 bg-primary/10 rounded-lg">
-                    <FileText className="h-6 w-6 text-primary" />
-                  </div>
-                  <div>
-                    <h2 className="text-2xl font-bold text-foreground">Información del Informe</h2>
-                    <p className="text-sm text-muted-foreground">Complete los datos del paciente</p>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="p-8 space-y-8">
-                
-                {/* Report Type Selection */}
-                <div className="space-y-3">
-                  <Label htmlFor="report-type" className="text-base font-semibold text-foreground">
-                    Tipo de Informe *
-                  </Label>
-                  <Select value={selectedReport} onValueChange={setSelectedReport}>
-                    <SelectTrigger className="w-full h-12 bg-background border-2 border-border hover:border-primary transition-colors rounded-xl">
-                      <SelectValue placeholder="Seleccionar tipo de informe" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-popover border-border shadow-xl z-50 rounded-xl">
-                      {reportTypes.map((report) => (
-                        <SelectItem key={report.value} value={report.value} className="rounded-lg">
-                          <div className="flex items-center space-x-3 py-1">
-                            <div className="p-1.5 bg-primary/10 rounded-md">
-                              <report.icon className="h-4 w-4 text-primary" />
-                            </div>
-                            <span className="font-medium">{report.label}</span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Pet Information */}
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div className="space-y-3">
-                    <Label htmlFor="pet-name" className="text-base font-semibold text-foreground">
-                      Nombre de mascota *
-                    </Label>
-                    <Input
-                      id="pet-name"
-                      placeholder="Ej: Bobby, Luna..."
-                      value={petData.name}
-                      onChange={(e) => setPetData({...petData, name: e.target.value})}
-                      className="h-12 bg-background border-2 border-border hover:border-primary focus:border-primary transition-colors rounded-xl"
-                    />
-                  </div>
-
-                  <div className="space-y-3">
-                    <Label htmlFor="tutor-name" className="text-base font-semibold text-foreground">
-                      Nombre del Tutor *
-                    </Label>
-                    <Input
-                      id="tutor-name"
-                      placeholder="Nombre completo del propietario"
-                      value={petData.tutorName}
-                      onChange={(e) => setPetData({...petData, tutorName: e.target.value})}
-                      className="h-12 bg-background border-2 border-border hover:border-primary focus:border-primary transition-colors rounded-xl"
-                    />
-                  </div>
-                </div>
-
-                {/* Species, Sex, Status */}
-                <div className="grid md:grid-cols-3 gap-6">
-                  <div className="space-y-3">
-                    <Label className="text-base font-semibold text-foreground">Especie *</Label>
-                    <Select value={petData.species} onValueChange={(value) => setPetData({...petData, species: value})}>
-                      <SelectTrigger className="h-12 bg-background border-2 border-border hover:border-primary transition-colors rounded-xl">
-                        <SelectValue placeholder="Seleccionar especie" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-popover border-border shadow-xl z-50 rounded-xl">
-                        {speciesList.map((species) => (
-                          <SelectItem key={species} value={species.toLowerCase()} className="rounded-lg">
-                            <span className="font-medium">{species}</span>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-3">
-                    <Label className="text-base font-semibold text-foreground">Sexo *</Label>
-                    <Select value={petData.sex} onValueChange={(value) => setPetData({...petData, sex: value})}>
-                      <SelectTrigger className="h-12 bg-background border-2 border-border hover:border-primary transition-colors rounded-xl">
-                        <SelectValue placeholder="Seleccionar sexo" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-popover border-border shadow-xl z-50 rounded-xl">
-                        {sexList.map((sex) => (
-                          <SelectItem key={sex} value={sex.toLowerCase()} className="rounded-lg">
-                            <span className="font-medium">{sex}</span>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-3">
-                    <Label className="text-base font-semibold text-foreground">Estado *</Label>
-                    <Select value={petData.status} onValueChange={(value) => setPetData({...petData, status: value})}>
-                      <SelectTrigger className="h-12 bg-background border-2 border-border hover:border-primary transition-colors rounded-xl">
-                        <SelectValue placeholder="Seleccionar estado" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-popover border-border shadow-xl z-50 rounded-xl">
-                        {statusList.map((status) => (
-                          <SelectItem key={status} value={status.toLowerCase()} className="rounded-lg">
-                            <span className="font-medium">{status}</span>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                {/* Microchip */}
-                <div className="space-y-4 p-6 bg-muted/30 rounded-xl border border-border/50">
-                  <div className="flex items-center space-x-3">
-                    <Checkbox
-                      id="has-microchip"
-                      checked={petData.hasMicrochip}
-                      onCheckedChange={(checked) => 
-                        setPetData({...petData, hasMicrochip: checked})
-                      }
-                      className="h-5 w-5"
-                    />
-                    <Label htmlFor="has-microchip" className="text-base font-semibold text-foreground cursor-pointer">
-                      Tiene Microchip
-                    </Label>
-                  </div>
-                  
-                  {petData.hasMicrochip && (
-                    <Input
-                      placeholder="Número de microchip (15 dígitos)"
-                      value={petData.microchip}
-                      onChange={(e) => setPetData({...petData, microchip: e.target.value})}
-                      className="h-12 bg-background border-2 border-border hover:border-primary focus:border-primary transition-colors rounded-xl"
-                    />
-                  )}
-                </div>
-
-                {/* Reference Clinic */}
-                <div className="space-y-3">
-                  <Label htmlFor="reference-clinic" className="text-base font-semibold text-foreground">
-                    Clínica de referencia
-                  </Label>
-                  <Input
-                    id="reference-clinic"
-                    placeholder="Nombre de la clínica de origen (opcional)"
-                    value={petData.referenceClinic}
-                    onChange={(e) => setPetData({...petData, referenceClinic: e.target.value})}
-                    className="h-12 bg-background border-2 border-border hover:border-primary focus:border-primary transition-colors rounded-xl"
-                  />
-                </div>
-
-                {/* Additional Information */}
-                <div className="space-y-3">
-                  <Label htmlFor="additional-info" className="text-base font-semibold text-foreground">
-                    Información adicional
-                  </Label>
-                  <Textarea
-                    id="additional-info"
-                    placeholder="Observaciones, comentarios adicionales, historial relevante..."
-                    value={petData.additionalInfo}
-                    onChange={(e) => setPetData({...petData, additionalInfo: e.target.value})}
-                    className="min-h-[140px] bg-background border-2 border-border hover:border-primary focus:border-primary transition-colors rounded-xl resize-y"
-                  />
-                </div>
-
-              </CardContent>
-            </Card>
-
-            {/* Voice Recording Section */}
-            <Card className="shadow-lg border-0 bg-card/60 backdrop-blur-sm overflow-hidden">
-              <CardHeader className="bg-gradient-to-r from-accent/5 to-accent/10 border-b border-border/50">
-                <div className="flex items-center space-x-3">
-                  <div className="p-2 bg-accent/10 rounded-lg">
-                    <Mic className="h-6 w-6 text-accent" />
-                  </div>
-                  <div>
-                    <h2 className="text-2xl font-bold text-foreground">Grabación de Audio</h2>
-                    <p className="text-sm text-muted-foreground">Grabe notas adicionales por voz</p>
-                  </div>
+                  <Mic className="h-6 w-6 text-cyan-600" />
+                  <h2 className="text-xl font-semibold text-gray-800">Grabación de Consulta</h2>
                 </div>
               </CardHeader>
               <CardContent className="p-8">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-6">
-                    <div className="flex items-center space-x-3">
-                      <div className="p-2 bg-muted/50 rounded-lg">
-                        <Clock className="h-6 w-6 text-muted-foreground" />
-                      </div>
-                      <span className="text-4xl font-mono font-bold text-foreground">
-                        {formatTime(recordingTime)}
-                      </span>
-                    </div>
-                    {isRecording && (
-                      <Badge variant="destructive" className="animate-pulse px-3 py-1 text-sm">
-                        ● Grabando
-                      </Badge>
+                <div className="flex flex-col items-center space-y-6">
+                  {/* Círculo de grabación principal con gradiente */}
+                  <div 
+                    className={`
+                      relative w-32 h-32 bg-gradient-to-br from-cyan-400 via-cyan-500 to-teal-500
+                      rounded-full flex items-center justify-center cursor-pointer 
+                      shadow-lg hover:shadow-xl transition-all duration-300
+                      ${isRecording ? 'pulse-animation bg-gradient-to-br from-red-400 via-red-500 to-red-600' : ''}
+                    `}
+                    onClick={toggleRecording}
+                  >
+                    {isRecording ? (
+                      <Square className="h-12 w-12 text-white" />
+                    ) : (
+                      <Mic className="h-12 w-12 text-white" />
                     )}
-                    {audioData && !isRecording && (
-                      <Badge variant="default" className="px-3 py-1 text-sm">
-                        ✓ Audio guardado
-                      </Badge>
+                    
+                    {/* Anillo de grabación animado */}
+                    {isRecording && (
+                      <div className="absolute inset-0 rounded-full border-4 border-red-300 animate-ping"></div>
                     )}
                   </div>
                   
-                  <div className="flex items-center space-x-3">
-                    {audioData && !isRecording && (
-                      <Button
-                        onClick={() => {
-                          setAudioData('');
-                          setRecordingTime(0);
-                        }}
-                        variant="outline"
-                        size="sm"
-                        className="h-10 rounded-lg"
-                      >
-                        Borrar Audio
-                      </Button>
+                  {/* Texto de estado */}
+                  <div className="text-center space-y-2">
+                    {!isRecording && !audioData && (
+                      <p className="text-gray-600 font-medium">Haga clic para comenzar la grabación</p>
                     )}
-                    
-                    <Button
-                      onClick={toggleRecording}
-                      disabled={isLoading}
-                      variant={isRecording ? "destructive" : "default"}
-                      size="lg"
-                      className="rounded-full w-20 h-20 shadow-xl hover:scale-110 transition-all duration-200 border-4 border-background"
-                    >
-                      {isRecording ? (
-                        <Square className="h-8 w-8" />
-                      ) : (
-                        <Mic className="h-8 w-8" />
-                      )}
-                    </Button>
+                    {isRecording && (
+                      <>
+                        <p className="text-red-600 font-semibold">Grabando...</p>
+                        <div className="text-2xl font-mono font-bold text-gray-700">
+                          {formatTime(recordingTime)}
+                        </div>
+                      </>
+                    )}
+                    {audioData && !isRecording && (
+                      <>
+                        <p className="text-green-600 font-semibold">✓ Audio guardado</p>
+                        <div className="text-lg font-mono text-gray-700">
+                          Duración: {formatTime(recordingTime)}
+                        </div>
+                        <Button
+                          onClick={() => {
+                            setAudioData('');
+                            setRecordingTime(0);
+                          }}
+                          variant="outline"
+                          size="sm"
+                          className="mt-2 border-red-300 text-red-600 hover:bg-red-50"
+                        >
+                          Borrar grabación
+                        </Button>
+                      </>
+                    )}
                   </div>
                 </div>
               </CardContent>
             </Card>
           </div>
 
-          {/* Sidebar */}
-          <div className="space-y-8">
-            
-            {/* Veterinarian Selection */}
-            <Card className="shadow-lg border-0 bg-card/60 backdrop-blur-sm overflow-hidden">
-              <CardHeader className="bg-gradient-to-r from-success/5 to-success/10 border-b border-border/50">
+          {/* Datos de la Consulta */}
+          <div className="mb-8">
+            <Card className="bg-white shadow-sm border-gray-200 overflow-hidden">
+              <CardHeader className="bg-gradient-to-r from-cyan-50 to-teal-50 border-b border-cyan-100">
                 <div className="flex items-center space-x-3">
-                  <div className="p-2 bg-success/10 rounded-lg">
-                    <Stethoscope className="h-6 w-6 text-success" />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-bold text-foreground">Seleccionar Veterinario</h3>
-                    <p className="text-sm text-muted-foreground">Busque y seleccione el veterinario</p>
-                  </div>
+                  <FileText className="h-6 w-6 text-cyan-600" />
+                  <h2 className="text-xl font-semibold text-gray-800">Datos de la Consulta</h2>
                 </div>
               </CardHeader>
-              <CardContent className="p-6 space-y-6">
-                <div className="relative">
-                  <Search className="absolute left-4 top-4 h-5 w-5 text-muted-foreground" />
-                  <Input
-                    placeholder="Buscar por nombre..."
-                    className="pl-12 h-12 bg-background border-2 border-border hover:border-primary focus:border-primary transition-colors rounded-xl"
-                  />
-                </div>
-                
-                <div className="space-y-3">
-                  {veterinariansList.map((veterinarian) => (
-                    <div
-                      key={veterinarian.id}
-                      className={`p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 hover:scale-[1.02] ${
-                        selectedVeterinarian === veterinarian.id 
-                          ? 'bg-primary text-primary-foreground border-primary shadow-lg' 
-                          : 'bg-background hover:bg-muted/50 border-border hover:border-primary/50 shadow-sm'
-                      }`}
-                      onClick={() => setSelectedVeterinarian(veterinarian.id)}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="font-semibold text-lg">{veterinarian.name}</span>
-                        <Badge 
-                          variant={selectedVeterinarian === veterinarian.id ? "secondary" : "outline"} 
-                          className="text-sm px-2 py-1"
-                        >
-                          #{veterinarian.id}
-                        </Badge>
-                      </div>
+              <CardContent className="p-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Columna izquierda */}
+                  <div className="space-y-6">
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-gray-700 flex items-center">
+                        <User className="h-4 w-4 mr-2 text-gray-500" />
+                        Nombre Paciente *
+                      </Label>
+                      <Input
+                        placeholder="Nombre completo del paciente"
+                        value={petData.name}
+                        onChange={(e) => setPetData({...petData, name: e.target.value})}
+                        className="h-11 border-gray-300 focus:border-cyan-500 focus:ring-cyan-500"
+                      />
                     </div>
-                  ))}
+
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-gray-700">
+                        Tipo de Informe *
+                      </Label>
+                      <Select value={selectedReport} onValueChange={setSelectedReport}>
+                        <SelectTrigger className="h-11 border-gray-300 focus:border-cyan-500">
+                          <SelectValue placeholder="Seleccionar tipo" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {reportTypes.map((report) => (
+                            <SelectItem key={report.value} value={report.value}>
+                              {report.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-gray-700">
+                        Doctor *
+                      </Label>
+                      <Select value={selectedVeterinarian} onValueChange={setSelectedVeterinarian}>
+                        <SelectTrigger className="h-11 border-gray-300 focus:border-cyan-500">
+                          <SelectValue placeholder="Seleccionar doctor" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {veterinariansList.map((vet) => (
+                            <SelectItem key={vet.id} value={vet.id}>
+                              {vet.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-gray-700">
+                        Especie *
+                      </Label>
+                      <Select value={petData.species} onValueChange={(value) => setPetData({...petData, species: value})}>
+                        <SelectTrigger className="h-11 border-gray-300 focus:border-cyan-500">
+                          <SelectValue placeholder="Seleccionar especie" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {speciesList.map((species) => (
+                            <SelectItem key={species} value={species.toLowerCase()}>
+                              {species}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-gray-700">
+                        Sexo *
+                      </Label>
+                      <Select value={petData.sex} onValueChange={(value) => setPetData({...petData, sex: value})}>
+                        <SelectTrigger className="h-11 border-gray-300 focus:border-cyan-500">
+                          <SelectValue placeholder="Seleccionar sexo" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {sexList.map((sex) => (
+                            <SelectItem key={sex} value={sex.toLowerCase()}>
+                              {sex}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-gray-700">
+                        Estado *
+                      </Label>
+                      <Select value={petData.status} onValueChange={(value) => setPetData({...petData, status: value})}>
+                        <SelectTrigger className="h-11 border-gray-300 focus:border-cyan-500">
+                          <SelectValue placeholder="Seleccionar estado" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {statusList.map((status) => (
+                            <SelectItem key={status} value={status.toLowerCase()}>
+                              {status}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  {/* Columna derecha */}
+                  <div className="space-y-6">
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-gray-700">
+                        Nombre Cliente
+                      </Label>
+                      <Input
+                        placeholder="Nombre del cliente/referente"
+                        value={petData.tutorName}
+                        onChange={(e) => setPetData({...petData, tutorName: e.target.value})}
+                        className="h-11 border-gray-300 focus:border-cyan-500 focus:ring-cyan-500"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-gray-700">
+                        Centro *
+                      </Label>
+                      <Select value="default" disabled>
+                        <SelectTrigger className="h-11 border-gray-300 bg-gray-50">
+                          <SelectValue placeholder="Seleccionar centro" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="default">C/ lafuente, 32</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
+                      <div className="flex items-center space-x-3">
+                        <Checkbox
+                          id="has-microchip"
+                          checked={petData.hasMicrochip}
+                          onCheckedChange={(checked) => 
+                            setPetData({...petData, hasMicrochip: checked})
+                          }
+                        />
+                        <Label htmlFor="has-microchip" className="text-sm font-medium text-gray-700">
+                          Tiene Microchip
+                        </Label>
+                      </div>
+                      
+                      {petData.hasMicrochip && (
+                        <Input
+                          placeholder="Número de microchip"
+                          value={petData.microchip}
+                          onChange={(e) => setPetData({...petData, microchip: e.target.value})}
+                          className="h-11 border-gray-300 focus:border-cyan-500 focus:ring-cyan-500"
+                        />
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-gray-700">
+                        Clínica de referencia
+                      </Label>
+                      <Input
+                        placeholder="Nombre de la clínica"
+                        value={petData.referenceClinic}
+                        onChange={(e) => setPetData({...petData, referenceClinic: e.target.value})}
+                        className="h-11 border-gray-300 focus:border-cyan-500 focus:ring-cyan-500"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-gray-700">
+                        Información adicional
+                      </Label>
+                      <Textarea
+                        placeholder="Observaciones y comentarios..."
+                        value={petData.additionalInfo}
+                        onChange={(e) => setPetData({...petData, additionalInfo: e.target.value})}
+                        className="min-h-[100px] border-gray-300 focus:border-cyan-500 focus:ring-cyan-500 resize-y"
+                      />
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>
+          </div>
 
-            {/* Action Buttons */}
-            <div className="space-y-4">
-              <Button 
-                onClick={generateReport}
-                disabled={isLoading}
-                className="w-full h-14 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-primary-foreground shadow-xl hover:shadow-2xl transition-all duration-200 rounded-xl text-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isLoading ? (
-                  <>
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary-foreground mr-2"></div>
-                    Procesando...
-                  </>
-                ) : (
-                  <>
-                    <FileText className="mr-2 h-5 w-5" />
-                    Generar Informe
-                  </>
-                )}
-              </Button>
-              
-              <Button 
-                variant="outline" 
-                className="w-full h-12 border-2 border-border hover:border-primary bg-background hover:bg-muted/50 transition-all duration-200 rounded-xl text-base font-medium"
-              >
-                <Heart className="mr-2 h-4 w-4" />
-                Guardar Borrador
-              </Button>
-              
-              <Button 
-                variant="ghost" 
-                onClick={clearForm}
-                className="w-full h-12 hover:bg-muted/50 transition-all duration-200 rounded-xl text-base font-medium"
-              >
-                <Square className="mr-2 h-4 w-4" />
-                Limpiar Formulario
-              </Button>
-            </div>
+          {/* Botón de envío con gradiente */}
+          <div className="flex justify-center mb-6">
+            <Button 
+              onClick={generateReport}
+              disabled={isLoading}
+              className="w-full max-w-md h-14 bg-gradient-to-r from-cyan-500 via-cyan-400 to-teal-500 hover:from-cyan-600 hover:via-cyan-500 hover:to-teal-600 text-white font-semibold text-lg shadow-lg hover:shadow-xl transition-all duration-200 rounded-lg border-0"
+            >
+              {isLoading ? (
+                <>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
+                  Procesando...
+                </>
+              ) : (
+                <>
+                  <Send className="mr-3 h-6 w-6" />
+                  Generar informe
+                </>
+              )}
+            </Button>
+          </div>
 
+          {/* Botones adicionales */}
+          <div className="flex justify-center space-x-4">
+            <Button 
+              variant="outline" 
+              onClick={clearForm}
+              className="border-cyan-300 text-cyan-700 hover:bg-gradient-to-r hover:from-cyan-50 hover:to-teal-50"
+            >
+              Limpiar Formulario
+            </Button>
           </div>
         </div>
       </div>
