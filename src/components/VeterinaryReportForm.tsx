@@ -142,34 +142,76 @@ const VeterinaryApp = () => {
       });
 
       if (response.ok) {
-        const responseData = await response.json();
-        console.log("Respuesta del webhook:", responseData);
+        let responseData;
+        let responseText = '';
+        try {
+          responseText = await response.text();
+          console.log("Respuesta RAW del servidor:", responseText);
+          responseData = JSON.parse(responseText);
+          console.log("Respuesta completa del webhook:", JSON.stringify(responseData, null, 2));
+        } catch (jsonError) {
+          console.error("Error parseando JSON:", jsonError);
+          console.log("Respuesta como texto:", responseText);
+          alert(`DEBUG: Respuesta del servidor: ${responseText}`);
+          showToast("Error", "Respuesta del servidor no válida", "destructive");
+          return;
+        }
         
         // Extraer datos dinámicos del webhook
-        if (responseData && responseData.length > 0 && responseData[0].data) {
-          const data = responseData[0].data;
+        let veterinarios = [];
+        let centros = [];
+        
+        // El webhook devuelve un objeto directo con success, message y data
+        if (responseData && responseData.success && responseData.data) {
+          const data = responseData.data;
+          console.log("Procesando datos del webhook:", data);
           
-          // Procesar veterinarios/empleados
-          if (data.empleados && data.empleados.registros) {
-            const vets = data.empleados.registros.map(emp => ({
+          // Procesar empleados/veterinarios
+          if (data.empleados && data.empleados.registros && Array.isArray(data.empleados.registros)) {
+            veterinarios = data.empleados.registros.map(emp => ({
               id: emp.ID,
               name: emp.Nombre
             }));
-            setVeterinariansList(vets);
+            console.log("Veterinarios extraídos:", veterinarios);
           }
           
           // Procesar ubicaciones/centros
-          if (data.ubicaciones && data.ubicaciones.registros) {
-            const clinics = data.ubicaciones.registros.map((ubicacion, index) => ({
+          if (data.ubicaciones && data.ubicaciones.registros && Array.isArray(data.ubicaciones.registros)) {
+            centros = data.ubicaciones.registros.map((ubicacion, index) => ({
               id: `clinic_${index}`,
               address: ubicacion.Direccion
             }));
-            setClinicsList(clinics);
+            console.log("Centros extraídos:", centros);
           }
+        } else {
+          console.warn("Formato de respuesta inesperado:", responseData);
         }
         
+        console.log("Veterinarios procesados:", veterinarios);
+        console.log("Centros procesados:", centros);
+        
+        // Si no encontramos datos, usar valores por defecto
+        if (veterinarios.length === 0) {
+          veterinarios = [
+            { id: '001', name: 'Antonio' },
+            { id: '002', name: 'Miguel' },
+            { id: '003', name: 'Dra. Ana López' }
+          ];
+          console.log("Usando veterinarios por defecto");
+        }
+        
+        if (centros.length === 0) {
+          centros = [
+            { id: 'default', address: 'C/ lafuente, 32' }
+          ];
+          console.log("Usando centros por defecto");
+        }
+        
+        setVeterinariansList(veterinarios);
+        setClinicsList(centros);
         setIsLoggedIn(true);
         showToast("Login exitoso", `Bienvenido ${loginData.email}`);
+        
       } else {
         console.error("Error del servidor:", response.status, response.statusText);
         showToast("Error", `Error del servidor (${response.status}). Credenciales inválidas o problema en el servidor.`, "destructive");
@@ -894,7 +936,11 @@ const VeterinaryApp = () => {
                       </Label>
                       <Select value={selectedVeterinarian} onValueChange={setSelectedVeterinarian}>
                         <SelectTrigger className="h-11 border-gray-300 focus:border-cyan-500">
-                          <SelectValue placeholder={veterinariansList.length > 0 ? "Seleccionar doctor" : "Cargando doctores..."} />
+                          <SelectValue placeholder={
+                            veterinariansList.length > 0 
+                              ? "Seleccionar doctor" 
+                              : "Cargando doctores..."
+                          } />
                         </SelectTrigger>
                         <SelectContent>
                           {veterinariansList.length > 0 ? (
@@ -919,7 +965,11 @@ const VeterinaryApp = () => {
                       </Label>
                       <Select value={selectedClinic} onValueChange={setSelectedClinic}>
                         <SelectTrigger className="h-11 border-gray-300 focus:border-cyan-500">
-                          <SelectValue placeholder={clinicsList.length > 0 ? "Seleccionar centro" : "Cargando centros..."} />
+                          <SelectValue placeholder={
+                            clinicsList.length > 0 
+                              ? "Seleccionar centro" 
+                              : "Cargando centros..."
+                          } />
                         </SelectTrigger>
                         <SelectContent>
                           {clinicsList.length > 0 ? (
