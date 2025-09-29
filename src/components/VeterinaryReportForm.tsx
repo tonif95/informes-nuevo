@@ -394,16 +394,55 @@ const VeterinaryApp = () => {
         }
       });
 
-      await fetch(WEBHOOK_URL, {
+      const response = await fetch(WEBHOOK_URL, {
         method: "POST",
-        mode: "no-cors",
         headers: {
-          'X-Requested-With': 'XMLHttpRequest',
+          'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: formData,
       });
 
-      showToast("Informe Enviado", "El informe ha sido enviado correctamente al sistema de procesamiento.");
+      if (response.ok) {
+        let responseData;
+        try {
+          const responseText = await response.text();
+          console.log("Respuesta del webhook de informe:", responseText);
+          responseData = JSON.parse(responseText);
+          
+          // Procesar la respuesta para extraer el enlace del documento
+          let documentLink = null;
+          
+          // El webhook devuelve un array con el archivo generado
+          if (Array.isArray(responseData) && responseData.length > 0) {
+            const fileData = responseData[0];
+            if (fileData.link) {
+              documentLink = fileData.link;
+              console.log("Enlace del documento encontrado:", documentLink);
+            }
+          }
+          // También verificar si viene en un formato de objeto directo
+          else if (responseData && responseData.link) {
+            documentLink = responseData.link;
+            console.log("Enlace del documento encontrado:", documentLink);
+          }
+          
+          if (documentLink) {
+            // Abrir el documento en una nueva pestaña
+            window.open(documentLink, '_blank');
+            showToast("Informe Generado", "El informe ha sido generado exitosamente y se abrió en una nueva pestaña.");
+          } else {
+            console.warn("No se encontró enlace en la respuesta:", responseData);
+            showToast("Informe Enviado", "El informe ha sido enviado correctamente al sistema de procesamiento.");
+          }
+          
+        } catch (parseError) {
+          console.error("Error procesando respuesta del webhook:", parseError);
+          showToast("Informe Enviado", "El informe ha sido enviado correctamente al sistema de procesamiento.");
+        }
+      } else {
+        console.error("Error del servidor:", response.status, response.statusText);
+        showToast("Error", "Error al generar el informe. Por favor intente nuevamente.", "destructive");
+      }
 
     } catch (error) {
       console.error("Error enviando el informe:", error);
