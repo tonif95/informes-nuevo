@@ -45,6 +45,11 @@ const VeterinaryApp = () => {
     password: ''
   });
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  
+  // Estados para datos dinámicos del webhook
+  const [veterinariansList, setVeterinariansList] = useState([]);
+  const [clinicsList, setClinicsList] = useState([]);
+  const [selectedClinic, setSelectedClinic] = useState('');
 
   // Estados del formulario principal
   const [isRecording, setIsRecording] = useState(false);
@@ -86,16 +91,6 @@ const VeterinaryApp = () => {
     { value: 'ecografia-abdomen', label: 'Ecografía abdomen', icon: Stethoscope }
   ];
 
-  const veterinariansList = [
-    { id: '001', name: 'Antonio' },
-    { id: '002', name: 'Miguel' },
-    { id: '003', name: 'Dra. Ana López' }
-  ];
-
-  const clinicsList = [
-    { address: 'C/ lafuente, 32' }
-  ];
-
   const speciesList = ['Perro', 'Gato', 'Conejo', 'Otro'];
   const sexList = ['Macho', 'Hembra'];
   const statusList = ['Entero', 'Castrado'];
@@ -118,7 +113,7 @@ const VeterinaryApp = () => {
     return date.toISOString().split('T')[0];
   };
 
-  // Función de login
+  // Función de login modificada para extraer datos dinámicos
   const handleLogin = async () => {
     if (!loginData.email || !loginData.password) {
       showToast("Error", "Por favor complete todos los campos", "destructive");
@@ -147,6 +142,32 @@ const VeterinaryApp = () => {
       });
 
       if (response.ok) {
+        const responseData = await response.json();
+        console.log("Respuesta del webhook:", responseData);
+        
+        // Extraer datos dinámicos del webhook
+        if (responseData && responseData.length > 0 && responseData[0].data) {
+          const data = responseData[0].data;
+          
+          // Procesar veterinarios/empleados
+          if (data.empleados && data.empleados.registros) {
+            const vets = data.empleados.registros.map(emp => ({
+              id: emp.ID,
+              name: emp.Nombre
+            }));
+            setVeterinariansList(vets);
+          }
+          
+          // Procesar ubicaciones/centros
+          if (data.ubicaciones && data.ubicaciones.registros) {
+            const clinics = data.ubicaciones.registros.map((ubicacion, index) => ({
+              id: `clinic_${index}`,
+              address: ubicacion.Direccion
+            }));
+            setClinicsList(clinics);
+          }
+        }
+        
         setIsLoggedIn(true);
         showToast("Login exitoso", `Bienvenido ${loginData.email}`);
       } else {
@@ -165,6 +186,9 @@ const VeterinaryApp = () => {
   const handleLogout = () => {
     setIsLoggedIn(false);
     setLoginData({ email: '', password: '' });
+    setVeterinariansList([]);
+    setClinicsList([]);
+    setSelectedClinic('');
     clearForm();
   };
 
@@ -270,7 +294,7 @@ const VeterinaryApp = () => {
   };
 
   const generateReport = async () => {
-    if (!petData.name || !petData.tutorName || !selectedReport || !petData.species || !petData.sex || !petData.status) {
+    if (!petData.name || !petData.tutorName || !selectedReport || !petData.species || !petData.sex || !petData.status || !selectedClinic) {
       showToast("Error", "Por favor complete los campos obligatorios", "destructive");
       return;
     }
@@ -279,6 +303,7 @@ const VeterinaryApp = () => {
 
     try {
       const selectedVet = veterinariansList.find(vet => vet.id === selectedVeterinarian);
+      const selectedClinicData = clinicsList.find(clinic => clinic.id === selectedClinic);
       
       const requestData = {
         createdAt: new Date().toISOString(),
@@ -298,13 +323,15 @@ const VeterinaryApp = () => {
         reportFileID: '',
         selectedVet: selectedVet ? selectedVet.name.replace(/^Dr\.|^Dra\./, '').trim() : null,
         selectedClinic: {
-          address: 'C/ lafuente, 32'
+          address: selectedClinicData ? selectedClinicData.address : ''
         },
         vetList: veterinariansList.map(vet => ({
           name: vet.name,
           number: vet.id
         })),
-        clinicList: clinicsList,
+        clinicList: clinicsList.map(clinic => ({
+          address: clinic.address
+        })),
         // Nuevos campos
         nhc: petData.nhc || '',
         birthDate: petData.birthDate || '',
@@ -365,6 +392,7 @@ const VeterinaryApp = () => {
     });
     setSelectedReport('');
     setSelectedVeterinarian('');
+    setSelectedClinic('');
     setAudioData('');
     setRecordingTime(0);
     showToast("Formulario limpiado", "Todos los campos han sido restablecidos");
@@ -866,28 +894,45 @@ const VeterinaryApp = () => {
                       </Label>
                       <Select value={selectedVeterinarian} onValueChange={setSelectedVeterinarian}>
                         <SelectTrigger className="h-11 border-gray-300 focus:border-cyan-500">
-                          <SelectValue placeholder="Seleccionar doctor" />
+                          <SelectValue placeholder={veterinariansList.length > 0 ? "Seleccionar doctor" : "Cargando doctores..."} />
                         </SelectTrigger>
                         <SelectContent>
-                          {veterinariansList.map((vet) => (
-                            <SelectItem key={vet.id} value={vet.id}>
-                              {vet.name}
+                          {veterinariansList.length > 0 ? (
+                            veterinariansList.map((vet) => (
+                              <SelectItem key={vet.id} value={vet.id}>
+                                {vet.name}
+                              </SelectItem>
+                            ))
+                          ) : (
+                            <SelectItem value="no-data" disabled>
+                              No hay doctores disponibles
                             </SelectItem>
-                          ))}
+                          )}
                         </SelectContent>
                       </Select>
                     </div>
 
                     <div className="space-y-2">
-                      <Label className="text-sm font-medium text-gray-700">
+                      <Label className="text-sm font-medium text-gray-700 flex items-center">
+                        <MapPin className="h-4 w-4 mr-2 text-gray-500" />
                         Centro *
                       </Label>
-                      <Select value="default" disabled>
-                        <SelectTrigger className="h-11 border-gray-300 bg-gray-50">
-                          <SelectValue placeholder="Seleccionar centro" />
+                      <Select value={selectedClinic} onValueChange={setSelectedClinic}>
+                        <SelectTrigger className="h-11 border-gray-300 focus:border-cyan-500">
+                          <SelectValue placeholder={clinicsList.length > 0 ? "Seleccionar centro" : "Cargando centros..."} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="default">C/ lafuente, 32</SelectItem>
+                          {clinicsList.length > 0 ? (
+                            clinicsList.map((clinic) => (
+                              <SelectItem key={clinic.id} value={clinic.id}>
+                                {clinic.address}
+                              </SelectItem>
+                            ))
+                          ) : (
+                            <SelectItem value="no-data" disabled>
+                              No hay centros disponibles
+                            </SelectItem>
+                          )}
                         </SelectContent>
                       </Select>
                     </div>
