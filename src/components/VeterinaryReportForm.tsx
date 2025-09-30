@@ -91,7 +91,7 @@ const VeterinaryApp = () => {
     { value: 'ecografia-abdomen', label: 'Ecografía abdomen', icon: Stethoscope }
   ];
 
-  const speciesList = ['Perro', 'Gato', 'Conejo', 'Otro'];
+  const speciesList = ['Perro', 'Gato', 'Exótico'];
   const sexList = ['Macho', 'Hembra'];
   const statusList = ['Entero', 'Castrado'];
   
@@ -99,8 +99,7 @@ const VeterinaryApp = () => {
   const breedsList = {
     perro: ['Labrador', 'Pastor Alemán', 'Golden Retriever', 'Bulldog', 'Beagle', 'Poodle', 'Rottweiler', 'Yorkshire', 'Chihuahua', 'Mestizo', 'Otro'],
     gato: ['Persa', 'Siamés', 'Maine Coon', 'Británico', 'Ragdoll', 'Bengalí', 'Sphynx', 'Angora', 'Mestizo', 'Otro'],
-    conejo: ['Holandés', 'Angora', 'Rex', 'Cabeza de León', 'Mini Lop', 'Flemish Giant', 'Mestizo', 'Otro'],
-    otro: ['Mixta', 'Desconocida', 'Otro']
+    exótico: ['Conejo', 'Hurón', 'Cobaya', 'Hámster', 'Loro', 'Tortuga', 'Iguana', 'Serpiente', 'Otro']
   };
 
   const habitatList = ['Doméstico interior', 'Doméstico exterior', 'Mixto (interior/exterior)', 'Granja', 'Refugio', 'Otro'];
@@ -336,8 +335,15 @@ const VeterinaryApp = () => {
   };
 
   const generateReport = async () => {
-    if (!petData.name || !petData.tutorName || !selectedReport || !petData.species || !petData.sex || !petData.status || !selectedClinic) {
-      showToast("Error", "Por favor complete los campos obligatorios", "destructive");
+    // Validar solo campos obligatorios (arriba de la línea divisoria)
+    if (!selectedReport || !selectedVeterinarian || !selectedClinic || !petData.species || !petData.sex || !petData.status || !petData.name) {
+      showToast("Error", "Por favor complete los campos obligatorios marcados con *", "destructive");
+      return;
+    }
+
+    // Validar que haya audio grabado
+    if (!audioData) {
+      showToast("Error", "Por favor grabe el audio de la consulta antes de enviar", "destructive");
       return;
     }
 
@@ -555,7 +561,7 @@ const VeterinaryApp = () => {
     );
   }
 
-  // Aplicación principal con el nuevo diseño
+  // Aplicación principal con el nuevo diseño reorganizado
   return (
     <div className="min-h-screen bg-gray-50" style={{ 
       minHeight: window.self !== window.top ? '100vh' : 'auto',
@@ -593,6 +599,17 @@ const VeterinaryApp = () => {
         
         [data-radix-portal] {
           z-index: 999999 !important;
+        }
+
+        /* Estilos personalizados para asteriscos rojos y texto más grande */
+        .required-asterisk {
+          color: #ef4444;
+          font-weight: 700;
+          margin-left: 2px;
+        }
+
+        .label-text-larger {
+          font-size: 15px;
         }
       `}</style>
 
@@ -713,7 +730,7 @@ const VeterinaryApp = () => {
             </Card>
           </div>
 
-          {/* Datos de la Consulta */}
+          {/* Datos de la Consulta - REORGANIZADO */}
           <div className="mb-8">
             <Card className="bg-white shadow-sm border-gray-200 overflow-hidden">
               <CardHeader className="bg-gradient-to-r from-cyan-50 to-teal-50 border-b border-cyan-100">
@@ -723,270 +740,174 @@ const VeterinaryApp = () => {
                 </div>
               </CardHeader>
               <CardContent className="p-8">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {/* Columna 1 */}
-                  <div className="space-y-6">
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium text-gray-700 flex items-center">
-                        <User className="h-4 w-4 mr-2 text-gray-500" />
-                        Nombre Paciente *
-                      </Label>
-                      <Input
-                        placeholder="Nombre completo del paciente"
-                        value={petData.name}
-                        onChange={(e) => setPetData({...petData, name: e.target.value})}
-                        className="h-11 border-gray-300 focus:border-cyan-500 focus:ring-cyan-500"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium text-gray-700">
-                        Nombre Cliente
-                      </Label>
-                      <Input
-                        placeholder="Nombre del cliente/referente"
-                        value={petData.tutorName}
-                        onChange={(e) => setPetData({...petData, tutorName: e.target.value})}
-                        className="h-11 border-gray-300 focus:border-cyan-500 focus:ring-cyan-500"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium text-gray-700 flex items-center">
-                        <FileText className="h-4 w-4 mr-2 text-gray-500" />
-                        NHC
-                      </Label>
-                      <Input
-                        placeholder="Número de Historia Clínica"
-                        value={petData.nhc}
-                        onChange={(e) => setPetData({...petData, nhc: e.target.value})}
-                        className="h-11 border-gray-300 focus:border-cyan-500 focus:ring-cyan-500"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium text-gray-700 flex items-center">
-                        <Calendar className="h-4 w-4 mr-2 text-gray-500" />
-                        Fecha de Nacimiento
-                      </Label>
-                      <Input
-                        type="date"
-                        value={formatDateForInput(petData.birthDate)}
-                        onChange={(e) => setPetData({...petData, birthDate: e.target.value})}
-                        className="h-11 border-gray-300 focus:border-cyan-500 focus:ring-cyan-500"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium text-gray-700">
-                        Especie *
-                      </Label>
-                      <Select value={petData.species} onValueChange={(value) => setPetData({...petData, species: value, breed: ''})}>
-                        <SelectTrigger className="h-11 border-gray-300 focus:border-cyan-500">
-                          <SelectValue placeholder="Seleccionar especie" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {speciesList.map((species) => (
-                            <SelectItem key={species} value={species.toLowerCase()}>
-                              {species}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium text-gray-700">
-                        Raza
-                      </Label>
-                      <Select 
-                        value={petData.breed} 
-                        onValueChange={(value) => setPetData({...petData, breed: value})}
-                        disabled={!petData.species}
-                      >
-                        <SelectTrigger className="h-11 border-gray-300 focus:border-cyan-500">
-                          <SelectValue placeholder={petData.species ? "Seleccionar raza" : "Primero seleccione la especie"} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {petData.species && breedsList[petData.species] && breedsList[petData.species].map((breed) => (
-                            <SelectItem key={breed} value={breed.toLowerCase()}>
-                              {breed}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                {/* SECCIÓN CAMPOS OBLIGATORIOS */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                  {/* Fila 1 */}
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-gray-700 label-text-larger flex items-center">
+                      Tipo de Informe
+                      <span className="required-asterisk">*</span>
+                    </Label>
+                    <Select value={selectedReport} onValueChange={setSelectedReport}>
+                      <SelectTrigger className="h-11 border-gray-300 focus:border-cyan-500">
+                        <SelectValue placeholder="Seleccionar tipo" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {reportTypes.map((report) => (
+                          <SelectItem key={report.value} value={report.value}>
+                            {report.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
 
-                  {/* Columna 2 */}
-                  <div className="space-y-6">
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium text-gray-700">
-                        Sexo *
-                      </Label>
-                      <Select value={petData.sex} onValueChange={(value) => setPetData({...petData, sex: value})}>
-                        <SelectTrigger className="h-11 border-gray-300 focus:border-cyan-500">
-                          <SelectValue placeholder="Seleccionar sexo" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {sexList.map((sex) => (
-                            <SelectItem key={sex} value={sex.toLowerCase()}>
-                              {sex}
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-gray-700 label-text-larger flex items-center">
+                      Doctor
+                      <span className="required-asterisk">*</span>
+                    </Label>
+                    <Select value={selectedVeterinarian} onValueChange={setSelectedVeterinarian}>
+                      <SelectTrigger className="h-11 border-gray-300 focus:border-cyan-500">
+                        <SelectValue placeholder={
+                          veterinariansList.length > 0 
+                            ? "Seleccionar doctor" 
+                            : "Cargando doctores..."
+                        } />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {veterinariansList.length > 0 ? (
+                          veterinariansList.map((vet) => (
+                            <SelectItem key={vet.id} value={vet.id}>
+                              {vet.name}
                             </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium text-gray-700">
-                        Estado *
-                      </Label>
-                      <Select value={petData.status} onValueChange={(value) => setPetData({...petData, status: value})}>
-                        <SelectTrigger className="h-11 border-gray-300 focus:border-cyan-500">
-                          <SelectValue placeholder="Seleccionar estado" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {statusList.map((status) => (
-                            <SelectItem key={status} value={status.toLowerCase()}>
-                              {status}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium text-gray-700 flex items-center">
-                        <Scale className="h-4 w-4 mr-2 text-gray-500" />
-                        Peso (kg)
-                      </Label>
-                      <Input
-                        type="number"
-                        step="0.1"
-                        placeholder="Peso en kilogramos"
-                        value={petData.weight}
-                        onChange={(e) => setPetData({...petData, weight: e.target.value})}
-                        className="h-11 border-gray-300 focus:border-cyan-500 focus:ring-cyan-500"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium text-gray-700 flex items-center">
-                        <Home className="h-4 w-4 mr-2 text-gray-500" />
-                        Hábitat
-                      </Label>
-                      <Select value={petData.habitat} onValueChange={(value) => setPetData({...petData, habitat: value})}>
-                        <SelectTrigger className="h-11 border-gray-300 focus:border-cyan-500">
-                          <SelectValue placeholder="Seleccionar hábitat" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {habitatList.map((habitat) => (
-                            <SelectItem key={habitat} value={habitat.toLowerCase()}>
-                              {habitat}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium text-gray-700 flex items-center">
-                        <Utensils className="h-4 w-4 mr-2 text-gray-500" />
-                        Alimentación
-                      </Label>
-                      <Select value={petData.diet} onValueChange={(value) => setPetData({...petData, diet: value})}>
-                        <SelectTrigger className="h-11 border-gray-300 focus:border-cyan-500">
-                          <SelectValue placeholder="Seleccionar tipo de alimentación" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {dietList.map((diet) => (
-                            <SelectItem key={diet} value={diet.toLowerCase()}>
-                              {diet}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium text-gray-700">
-                        Tipo de Informe *
-                      </Label>
-                      <Select value={selectedReport} onValueChange={setSelectedReport}>
-                        <SelectTrigger className="h-11 border-gray-300 focus:border-cyan-500">
-                          <SelectValue placeholder="Seleccionar tipo" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {reportTypes.map((report) => (
-                            <SelectItem key={report.value} value={report.value}>
-                              {report.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                          ))
+                        ) : (
+                          <SelectItem value="no-data" disabled>
+                            No hay doctores disponibles
+                          </SelectItem>
+                        )}
+                      </SelectContent>
+                    </Select>
                   </div>
 
-                  {/* Columna 3 */}
-                  <div className="space-y-6">
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium text-gray-700">
-                        Doctor *
-                      </Label>
-                      <Select value={selectedVeterinarian} onValueChange={setSelectedVeterinarian}>
-                        <SelectTrigger className="h-11 border-gray-300 focus:border-cyan-500">
-                          <SelectValue placeholder={
-                            veterinariansList.length > 0 
-                              ? "Seleccionar doctor" 
-                              : "Cargando doctores..."
-                          } />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {veterinariansList.length > 0 ? (
-                            veterinariansList.map((vet) => (
-                              <SelectItem key={vet.id} value={vet.id}>
-                                {vet.name}
-                              </SelectItem>
-                            ))
-                          ) : (
-                            <SelectItem value="no-data" disabled>
-                              No hay doctores disponibles
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-gray-700 label-text-larger flex items-center">
+                      <MapPin className="h-4 w-4 mr-2 text-gray-500" />
+                      Centro
+                      <span className="required-asterisk">*</span>
+                    </Label>
+                    <Select value={selectedClinic} onValueChange={setSelectedClinic}>
+                      <SelectTrigger className="h-11 border-gray-300 focus:border-cyan-500">
+                        <SelectValue placeholder={
+                          clinicsList.length > 0 
+                            ? "Seleccionar centro" 
+                            : "Cargando centros..."
+                        } />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {clinicsList.length > 0 ? (
+                          clinicsList.map((clinic) => (
+                            <SelectItem key={clinic.id} value={clinic.id}>
+                              {clinic.address}
                             </SelectItem>
-                          )}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                          ))
+                        ) : (
+                          <SelectItem value="no-data" disabled>
+                            No hay centros disponibles
+                          </SelectItem>
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium text-gray-700 flex items-center">
-                        <MapPin className="h-4 w-4 mr-2 text-gray-500" />
-                        Centro *
-                      </Label>
-                      <Select value={selectedClinic} onValueChange={setSelectedClinic}>
-                        <SelectTrigger className="h-11 border-gray-300 focus:border-cyan-500">
-                          <SelectValue placeholder={
-                            clinicsList.length > 0 
-                              ? "Seleccionar centro" 
-                              : "Cargando centros..."
-                          } />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {clinicsList.length > 0 ? (
-                            clinicsList.map((clinic) => (
-                              <SelectItem key={clinic.id} value={clinic.id}>
-                                {clinic.address}
-                              </SelectItem>
-                            ))
-                          ) : (
-                            <SelectItem value="no-data" disabled>
-                              No hay centros disponibles
-                            </SelectItem>
-                          )}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                  {/* Fila 2 */}
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-gray-700 label-text-larger flex items-center">
+                      Especie
+                      <span className="required-asterisk">*</span>
+                    </Label>
+                    <Select value={petData.species} onValueChange={(value) => setPetData({...petData, species: value, breed: ''})}>
+                      <SelectTrigger className="h-11 border-gray-300 focus:border-cyan-500">
+                        <SelectValue placeholder="Seleccionar especie" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {speciesList.map((species) => (
+                          <SelectItem key={species} value={species.toLowerCase()}>
+                            {species}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-gray-700 label-text-larger flex items-center">
+                      Sexo
+                      <span className="required-asterisk">*</span>
+                    </Label>
+                    <Select value={petData.sex} onValueChange={(value) => setPetData({...petData, sex: value})}>
+                      <SelectTrigger className="h-11 border-gray-300 focus:border-cyan-500">
+                        <SelectValue placeholder="Seleccionar sexo" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {sexList.map((sex) => (
+                          <SelectItem key={sex} value={sex.toLowerCase()}>
+                            {sex}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-gray-700 label-text-larger flex items-center">
+                      Estado
+                      <span className="required-asterisk">*</span>
+                    </Label>
+                    <Select value={petData.status} onValueChange={(value) => setPetData({...petData, status: value})}>
+                      <SelectTrigger className="h-11 border-gray-300 focus:border-cyan-500">
+                        <SelectValue placeholder="Seleccionar estado" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {statusList.map((status) => (
+                          <SelectItem key={status} value={status.toLowerCase()}>
+                            {status}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Fila 3 */}
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-gray-700 label-text-larger flex items-center">
+                      <User className="h-4 w-4 mr-2 text-gray-500" />
+                      Nombre Paciente
+                      <span className="required-asterisk">*</span>
+                    </Label>
+                    <Input
+                      placeholder="Nombre completo del paciente"
+                      value={petData.name}
+                      onChange={(e) => setPetData({...petData, name: e.target.value})}
+                      className="h-11 border-gray-300 focus:border-cyan-500 focus:ring-cyan-500"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-gray-700 label-text-larger flex items-center">
+                      <FileText className="h-4 w-4 mr-2 text-gray-500" />
+                      NHC
+                    </Label>
+                    <Input
+                      placeholder="Número de Historia Clínica"
+                      value={petData.nhc}
+                      onChange={(e) => setPetData({...petData, nhc: e.target.value})}
+                      className="h-11 border-gray-300 focus:border-cyan-500 focus:ring-cyan-500"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
                     <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
                       <div className="flex items-center space-x-3">
                         <Checkbox
@@ -996,7 +917,7 @@ const VeterinaryApp = () => {
                             setPetData({...petData, hasMicrochip: checked})
                           }
                         />
-                        <Label htmlFor="has-microchip" className="text-sm font-medium text-gray-700">
+                        <Label htmlFor="has-microchip" className="text-sm font-medium text-gray-700 label-text-larger">
                           Tiene Microchip
                         </Label>
                       </div>
@@ -1010,30 +931,139 @@ const VeterinaryApp = () => {
                         />
                       )}
                     </div>
+                  </div>
+                </div>
 
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium text-gray-700">
-                        Clínica de referencia
-                      </Label>
-                      <Input
-                        placeholder="Nombre de la clínica"
-                        value={petData.referenceClinic}
-                        onChange={(e) => setPetData({...petData, referenceClinic: e.target.value})}
-                        className="h-11 border-gray-300 focus:border-cyan-500 focus:ring-cyan-500"
-                      />
-                    </div>
+                {/* LÍNEA DIVISORIA */}
+                <div className="border-t-2 border-gray-300 my-8"></div>
 
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium text-gray-700">
-                        Información adicional
-                      </Label>
-                      <Textarea
-                        placeholder="Observaciones y comentarios..."
-                        value={petData.additionalInfo}
-                        onChange={(e) => setPetData({...petData, additionalInfo: e.target.value})}
-                        className="min-h-[120px] border-gray-300 focus:border-cyan-500 focus:ring-cyan-500 resize-y"
-                      />
-                    </div>
+                {/* SECCIÓN CAMPOS OPCIONALES */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {/* Fila 1 opcionales */}
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-gray-700 label-text-larger">
+                      Nombre Cliente
+                    </Label>
+                    <Input
+                      placeholder="Nombre del cliente/referente"
+                      value={petData.tutorName}
+                      onChange={(e) => setPetData({...petData, tutorName: e.target.value})}
+                      className="h-11 border-gray-300 focus:border-cyan-500 focus:ring-cyan-500"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-gray-700 label-text-larger flex items-center">
+                      <Calendar className="h-4 w-4 mr-2 text-gray-500" />
+                      Fecha de Nacimiento
+                    </Label>
+                    <Input
+                      type="date"
+                      value={formatDateForInput(petData.birthDate)}
+                      onChange={(e) => setPetData({...petData, birthDate: e.target.value})}
+                      className="h-11 border-gray-300 focus:border-cyan-500 focus:ring-cyan-500"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-gray-700 label-text-larger">
+                      Clínica de referencia
+                    </Label>
+                    <Input
+                      placeholder="Nombre de la clínica"
+                      value={petData.referenceClinic}
+                      onChange={(e) => setPetData({...petData, referenceClinic: e.target.value})}
+                      className="h-11 border-gray-300 focus:border-cyan-500 focus:ring-cyan-500"
+                    />
+                  </div>
+
+                  {/* Fila 2 opcionales */}
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-gray-700 label-text-larger">
+                      Raza
+                    </Label>
+                    <Select 
+                      value={petData.breed} 
+                      onValueChange={(value) => setPetData({...petData, breed: value})}
+                      disabled={!petData.species}
+                    >
+                      <SelectTrigger className="h-11 border-gray-300 focus:border-cyan-500">
+                        <SelectValue placeholder={petData.species ? "Seleccionar raza" : "Primero seleccione la especie"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {petData.species && breedsList[petData.species] && breedsList[petData.species].map((breed) => (
+                          <SelectItem key={breed} value={breed.toLowerCase()}>
+                            {breed}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-gray-700 label-text-larger flex items-center">
+                      <Scale className="h-4 w-4 mr-2 text-gray-500" />
+                      Peso (kg)
+                    </Label>
+                    <Input
+                      type="number"
+                      step="0.1"
+                      placeholder="Peso en kilogramos"
+                      value={petData.weight}
+                      onChange={(e) => setPetData({...petData, weight: e.target.value})}
+                      className="h-11 border-gray-300 focus:border-cyan-500 focus:ring-cyan-500"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-gray-700 label-text-larger flex items-center">
+                      <Utensils className="h-4 w-4 mr-2 text-gray-500" />
+                      Alimentación
+                    </Label>
+                    <Select value={petData.diet} onValueChange={(value) => setPetData({...petData, diet: value})}>
+                      <SelectTrigger className="h-11 border-gray-300 focus:border-cyan-500">
+                        <SelectValue placeholder="Seleccionar tipo de alimentación" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {dietList.map((diet) => (
+                          <SelectItem key={diet} value={diet.toLowerCase()}>
+                            {diet}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Fila 3 opcionales */}
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-gray-700 label-text-larger flex items-center">
+                      <Home className="h-4 w-4 mr-2 text-gray-500" />
+                      Hábitat
+                    </Label>
+                    <Select value={petData.habitat} onValueChange={(value) => setPetData({...petData, habitat: value})}>
+                      <SelectTrigger className="h-11 border-gray-300 focus:border-cyan-500">
+                        <SelectValue placeholder="Seleccionar hábitat" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {habitatList.map((habitat) => (
+                          <SelectItem key={habitat} value={habitat.toLowerCase()}>
+                            {habitat}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2 md:col-span-2">
+                    <Label className="text-sm font-medium text-gray-700 label-text-larger">
+                      Información adicional
+                    </Label>
+                    <Textarea
+                      placeholder="Observaciones y comentarios..."
+                      value={petData.additionalInfo}
+                      onChange={(e) => setPetData({...petData, additionalInfo: e.target.value})}
+                      className="min-h-[120px] border-gray-300 focus:border-cyan-500 focus:ring-cyan-500 resize-y"
+                    />
                   </div>
                 </div>
               </CardContent>
